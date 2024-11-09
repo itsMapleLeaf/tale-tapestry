@@ -9,10 +9,8 @@ export function AppHeader() {
 					to="/"
 					className="text-primary-200 -mx-3 -my-2 rounded-md px-3 py-2 opacity-70 transition-opacity hover:opacity-100"
 				>
-					<h1 className="flex gap-0.5">
-						<span className="text-2xl font-extralight">tale</span>
-						<span className="translate-y-[5px] opacity-50">&bull;</span>
-						<span className="text-2xl font-extralight">tapestry</span>
+					<h1 className="flex gap-1.5 text-2xl font-extralight">
+						tale tapestry
 					</h1>
 				</Link>
 			</div>
