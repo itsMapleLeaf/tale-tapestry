@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+	--default-font-family: "Rubik Variable";
+	--primary-chroma-hue: 8% 150deg;
+
+	--color-primary-50: oklch(98% var(--primary-chroma-hue));
+	--color-primary-950: oklch(15% var(--primary-chroma-hue));
+
+	--color-primary-900: color-mix(
+		in oklch,
+		var(--color-primary-50) 10%,
+		var(--color-primary-950)
+	);
+	--color-primary-800: color-mix(
+		in oklch,
+		var(--color-primary-50) 20%,
+		var(--color-primary-950)
+	);
+	--color-primary-700: color-mix(
+		in oklch,
+		var(--color-primary-50) 30%,
+		var(--color-primary-950)
+	);
+	--color-primary-600: color-mix(
+		in oklch,
+		var(--color-primary-50) 40%,
+		var(--color-primary-950)
+	);
+	--color-primary-500: color-mix(
+		in oklch,
+		var(--color-primary-50) 50%,
+		var(--color-primary-950)
+	);
+	--color-primary-400: color-mix(
+		in oklch,
+		var(--color-primary-50) 60%,
+		var(--color-primary-950)
+	);
+	--color-primary-300: color-mix(
+		in oklch,
+		var(--color-primary-50) 70%,
+		var(--color-primary-950)
+	);
+	--color-primary-200: color-mix(
+		in oklch,
+		var(--color-primary-50) 80%,
+		var(--color-primary-950)
+	);
+	--color-primary-100: color-mix(
+		in oklch,
+		var(--color-primary-50) 90%,
+		var(--color-primary-950)
+	);
+}
+
+@layer base {
+	:root {
+		background-color: var(--color-primary-950);
+		color: var(--color-primary-50);
+	}
+}
+
+@utility button {
+	@apply bg-primary-800 hover:bg-primary-700 rounded-lg px-3 py-1.5 transition-colors;
+}

@@ -1,3 +1,6 @@
+import "@fontsource-variable/rubik"
+import "./styles.css"
+
 import { ConvexAuthProvider } from "@convex-dev/auth/react"
 import { ConvexQueryClient } from "@convex-dev/react-query"
 import { QueryClient } from "@tanstack/react-query"
@@ -39,6 +42,7 @@ export function createRouter() {
 
 declare module "@tanstack/react-router" {
 	interface Register {
+		// prettier-ignore
 		router: ReturnType<typeof createRouter>
 	}
 }

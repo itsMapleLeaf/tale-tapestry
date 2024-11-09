@@ -23,7 +23,11 @@ function Home() {
 	if (!userQuery.data) {
 		return (
 			<main>
-				<button type="button" onClick={() => authActions.signIn("discord")}>
+				<button
+					type="button"
+					onClick={() => authActions.signIn("discord")}
+					className="button"
+				>
 					Discord Sign In
 				</button>
 			</main>
@@ -31,9 +35,13 @@ function Home() {
 	}
 
 	return (
-		<main>
+		<main className="bg-primary-900 border-primary-800 m-4 w-fit rounded-lg border px-4 py-3 shadow-lg">
 			<p>Hello {userQuery.data.name}</p>
-			<button type="button" onClick={() => authActions.signOut()}>
+			<button
+				type="button"
+				onClick={() => authActions.signOut()}
+				className="button"
+			>
 				Sign Out
 			</button>
 		</main>
