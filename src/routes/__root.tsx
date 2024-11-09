@@ -1,8 +1,12 @@
 import { QueryClient } from "@tanstack/react-query"
-import { createRootRouteWithContext } from "@tanstack/react-router"
-import { Outlet, ScrollRestoration } from "@tanstack/react-router"
+import {
+	createRootRouteWithContext,
+	Outlet,
+	ScrollRestoration,
+} from "@tanstack/react-router"
 import { Body, Head, Html, Meta, Scripts } from "@tanstack/start"
 import * as React from "react"
+import { AppHeader } from "../components/AppHeader.tsx"
 
 export const Route = createRootRouteWithContext<{
 	queryClient: QueryClient
@@ -37,7 +41,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<Meta />
 			</Head>
 			<Body>
-				{children}
+				<AppHeader />
+				<main className="container">{children}</main>
 				<ScrollRestoration />
 				<Scripts />
 			</Body>

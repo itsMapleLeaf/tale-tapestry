@@ -7,5 +7,6 @@ export default defineSchema({
 	users: defineTable({
 		...authTables.users.validator.fields,
 		name: v.string(),
+		openRouterApiKey: v.optional(v.string()),
 	}).index("email", ["email"]),
 })
