@@ -4,8 +4,8 @@ import { v } from "convex/values"
 
 export default defineSchema({
 	...authTables,
-	user: defineTable({
+	users: defineTable({
 		...authTables.users.validator.fields,
 		name: v.string(),
-	}),
+	}).index("email", ["email"]),
 })
