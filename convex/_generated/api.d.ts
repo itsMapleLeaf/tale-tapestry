@@ -15,7 +15,6 @@ import type {
 } from "convex/server";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
-import type * as prompts_actions from "../prompts/actions.js";
 import type * as prompts from "../prompts.js";
 import type * as tasks from "../tasks.js";
 
@@ -30,7 +29,6 @@ import type * as tasks from "../tasks.js";
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
-  "prompts/actions": typeof prompts_actions;
   prompts: typeof prompts;
   tasks: typeof tasks;
 }>;
