@@ -7,7 +7,7 @@ export function AppHeader() {
 			<div className="flex flex-1">
 				<Link
 					to="/"
-					className="text-primary-200 -m-3 p-3 opacity-70 transition-opacity hover:opacity-100"
+					className="text-primary-200 -mx-3 -my-2 rounded-md px-3 py-2 opacity-70 transition-opacity hover:opacity-100"
 				>
 					<h1 className="flex">
 						<span className="text-2xl font-extralight">tale</span>
