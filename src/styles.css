@@ -2,7 +2,7 @@
 
 @theme {
 	--default-font-family: "Rubik Variable";
-	--primary-chroma-hue: 8% 150deg;
+	--primary-chroma-hue: 9% 260deg;
 
 	--color-primary-50: oklch(98% var(--primary-chroma-hue));
 	--color-primary-950: oklch(15% var(--primary-chroma-hue));
@@ -74,7 +74,7 @@
 }
 
 @utility button {
-	@apply bg-primary-900/50 hover:bg-primary-800 border-primary-800 flex h-10 items-center gap-2 rounded border px-3 transition-colors;
+	@apply bg-primary-900/50 hover:bg-primary-900 border-primary-800 hover:border-primary-700 flex h-10 items-center gap-2 rounded border px-3 transition-colors;
 }
 
 @utility fade-rise {

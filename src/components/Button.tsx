@@ -6,7 +6,7 @@ import { LoadingIcon } from "./LoadingIcon.tsx"
 export interface ButtonProps extends ComponentProps<"button"> {
 	icon: ReactElement | null
 	pending?: boolean
-	onClick?: (event: React.MouseEvent) => Promise<unknown>
+	onClick?: (event: React.MouseEvent) => unknown
 }
 
 export function Button({
@@ -17,7 +17,7 @@ export function Button({
 	...props
 }: ButtonProps) {
 	const handleClick = useMutation({
-		mutationFn: onClick,
+		mutationFn: async (event: React.MouseEvent) => onClick?.(event),
 	})
 	return (
 		<button
@@ -26,7 +26,7 @@ export function Button({
 			className={twMerge("button", props.className)}
 			onClick={handleClick.mutate}
 		>
-			<div className="*:size-5">
+			<div className="*:size-5 empty:hidden">
 				{(pending ?? handleClick.isPending) ? (
 					<LoadingIcon className="animate-spin" />
 				) : (

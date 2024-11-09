@@ -11,6 +11,11 @@ export default defineSchema({
 		openRouterApiKey: v.optional(v.string()),
 	}).index("email", ["email"]),
 
+	worlds: defineTable({
+		creatorId: v.id("users"),
+		name: v.string(),
+	}).index("creatorId", ["creatorId"]),
+
 	prompts: defineTable({
 		userId: v.id("users"),
 		message: v.string(),

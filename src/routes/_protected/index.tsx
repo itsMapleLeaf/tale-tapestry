@@ -1,51 +1,196 @@
-import { convexQuery, useConvexMutation } from "@convex-dev/react-query"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useConvexAction } from "@convex-dev/react-query"
+import { useAutoAnimate } from "@formkit/auto-animate/react"
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { LucideSend } from "lucide-react"
+import { LucideArrowRight, LucideRefreshCcw } from "lucide-react"
+import { useState } from "react"
+import { twMerge } from "tailwind-merge"
 import { api } from "../../../convex/_generated/api"
 import { Button } from "../../components/Button.tsx"
 import { Input } from "../../components/Input.tsx"
 import { LoadingIcon } from "../../components/LoadingIcon.tsx"
+import { unique } from "../../lib/iterable.ts"
 
 export const Route = createFileRoute("/_protected/")({
 	component: Home,
 })
 
 function Home() {
-	const createPrompt = useMutation({
-		mutationFn: useConvexMutation(api.prompts.create),
+	const [animateRef] = useAutoAnimate({ easing: "ease-out", duration: 150 })
+	return (
+		<PageLayout
+			heading="Create a new world"
+			subheading="Give your world a name."
+		>
+			<main className="flex flex-col gap-3" ref={animateRef}>
+				<InputWithButton
+					placeholder="Eisenwald"
+					button={
+						<Button icon={<LucideArrowRight />}>
+							<span className="sr-only">Next</span>
+						</Button>
+					}
+				/>
+				<NameSuggestions />
+			</main>
+		</PageLayout>
+	)
+}
+
+const initialTheme = "Fantasy"
+
+const defaultThemes = new Set([
+	initialTheme,
+	"Modern / Contemporary",
+	"Sci-fi / Futuristic",
+	"Slice of Life",
+	"Nordic",
+	"Celtic",
+	"Germanic",
+	"French",
+	"Russian",
+	"East Asian",
+])
+
+function NameSuggestions() {
+	const suggestNames = useConvexAction(api.worlds.suggestNames)
+	const [theme, setTheme] = useState(initialTheme)
+
+	const nameSuggestionsQuery = useQuery({
+		queryKey: ["worldNameSuggestions", theme],
+		queryFn: () => suggestNames({ theme }),
+		retry: 3,
+		staleTime: Number.POSITIVE_INFINITY,
 	})
 
-	const prompts = useQuery(convexQuery(api.prompts.list, {}))
+	const handleThemeChanged = (theme: string) => {
+		setTheme(theme)
+		requestAnimationFrame(() => {
+			nameSuggestionsQuery.refetch()
+		})
+	}
+
+	if (nameSuggestionsQuery.isFetching) {
+		return (
+			<section className="text-primary-300 flex gap-2">
+				<LoadingIcon />
+				<p>Loading suggestions...</p>
+			</section>
+		)
+	}
+
+	if (!nameSuggestionsQuery.data) {
+		return (
+			<Section title="Failed to load suggestions.">
+				{nameSuggestionsQuery.error && (
+					<pre className="text-primary-300">
+						Error: {nameSuggestionsQuery.error.message}
+					</pre>
+				)}
+				<Button
+					icon={<LucideRefreshCcw />}
+					onClick={() => nameSuggestionsQuery.refetch()}
+					className="mt-2 self-start"
+				>
+					Try again
+				</Button>
+			</Section>
+		)
+	}
 
 	return (
-		<>
-			<form
-				action={(formData) => {
-					createPrompt.mutate({
-						message: formData.get("message") as string,
-					})
-				}}
-				className="flex gap-2"
-			>
-				<Input name="message" className="flex-1" />
-				<Button
-					type="submit"
-					icon={<LucideSend />}
-					pending={createPrompt.isPending}
+		<div className="flex flex-col gap-3">
+			<Section title="Can't think of a name? Here are some suggestions:">
+				<ul className="flex max-h-[480px] flex-col gap-2 overflow-y-auto">
+					{unique(nameSuggestionsQuery.data.suggestions).map((name) => (
+						<li key={name}>
+							<Button icon={null}>{name}</Button>
+						</li>
+					))}
+				</ul>
+			</Section>
+
+			<Section title="None of these feel right? Pick a theme to see more:">
+				<ul aria-label="Alternate themes" className="flex flex-wrap gap-2">
+					{[...defaultThemes].map((theme) => (
+						<li key={theme}>
+							<Button icon={null} onClick={() => handleThemeChanged(theme)}>
+								{theme}
+							</Button>
+						</li>
+					))}
+				</ul>
+			</Section>
+
+			<Section title="Or, choose your own:">
+				<form
+					className="flex max-w-64 gap-2"
+					action={(formData) => {
+						handleThemeChanged(formData.get("theme") as string)
+					}}
 				>
-					Send
-				</Button>
-			</form>
-			{prompts.data?.map((prompt) => (
-				<div className="bg-primary-900 border-primary-800 mt-2 rounded border px-3 py-2">
-					<p className="text-primary-100 border-primary-800 mb-2 border-l-4 pl-2 whitespace-pre-line">
-						{prompt.message}
-					</p>
-					<p className="whitespace-pre-line">{prompt.response}</p>
-					{prompt.pending && <LoadingIcon />}
-				</div>
-			))}
-		</>
+					<InputWithButton
+						placeholder="Small Cozy Village"
+						name="theme"
+						button={
+							<Button type="submit" icon={<LucideRefreshCcw />}>
+								<span className="sr-only">Load new suggestions</span>
+							</Button>
+						}
+					/>
+				</form>
+			</Section>
+		</div>
+	)
+}
+
+function PageLayout({
+	heading,
+	subheading,
+	children,
+}: {
+	heading: string
+	subheading: string
+	children: React.ReactNode
+}) {
+	return (
+		<div className="container flex max-w-[720px] flex-col gap-3 py-32">
+			<header>
+				<h1 className="text-4xl font-extralight">{heading}</h1>
+				<p className="text-primary-200 text-xl">{subheading}</p>
+			</header>
+			{children}
+		</div>
+	)
+}
+
+function Section({
+	title,
+	children,
+}: {
+	title: string
+	children: React.ReactNode
+}) {
+	return (
+		<section>
+			<p className="text-primary-200 mb-1">{title}</p>
+			{children}
+		</section>
+	)
+}
+
+function InputWithButton({
+	button,
+	className,
+	...inputProps
+}: {
+	button: React.ReactNode
+	className?: string
+} & React.ComponentPropsWithoutRef<typeof Input>) {
+	return (
+		<div className={twMerge("flex max-w-64 gap-2", className)}>
+			<Input {...inputProps} className="flex-1 self-start" />
+			{button}
+		</div>
 	)
 }
