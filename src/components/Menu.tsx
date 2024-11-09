@@ -19,7 +19,7 @@ export function MenuPanel(props: Ariakit.MenuProps) {
 			unmountOnHide
 			{...props}
 			className={twMerge(
-				"bg-primary-900 border-primary-800 fade-rise flex min-w-40 flex-col gap-0.5 rounded border p-1",
+				"bg-primary-900 border-primary-800 fade-rise flex min-w-40 flex-col gap-0.5 rounded border p-1 shadow-lg",
 				props.className,
 			)}
 		/>
@@ -53,7 +53,7 @@ export function MenuItem({
 			hideOnClick={false}
 			{...props}
 			className={twMerge(
-				"hover:bg-primary-800/50 flex h-10 cursor-default items-center justify-start gap-2 rounded-sm px-2",
+				"hover:bg-primary-800/50 flex h-10 cursor-default items-center justify-start gap-2 rounded-sm px-2 transition-colors",
 				props.className,
 			)}
 			onClick={handleClick.mutate}
