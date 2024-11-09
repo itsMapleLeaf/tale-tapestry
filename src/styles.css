@@ -55,6 +55,11 @@
 }
 
 @layer base {
+	* {
+		min-width: 0;
+		min-height: 0;
+	}
+
 	:root {
 		background-color: var(--color-primary-950);
 		color: var(--color-primary-50);
@@ -90,11 +95,11 @@
 }
 
 @utility button {
-	@apply panel-interactive flex h-10 items-center gap-2 rounded border px-3;
+	@apply panel-interactive flex min-h-10 items-center gap-2 rounded border px-3;
 }
 
 @utility input {
-	@apply panel-interactive not-active:focus:panel-hovered h-10 rounded px-3 outline-none;
+	@apply panel-interactive not-active:focus:panel-hovered min-h-10 rounded px-3 py-2 outline-none;
 }
 
 @utility fade-rise {

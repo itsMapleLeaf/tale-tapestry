@@ -3,7 +3,7 @@ import { useAutoAnimate } from "@formkit/auto-animate/react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { LucideArrowRight, LucideRefreshCcw } from "lucide-react"
-import { useState } from "react"
+import { useId, useState } from "react"
 import { twMerge } from "tailwind-merge"
 import { api } from "../../../convex/_generated/api"
 import { Button } from "../../components/Button.tsx"
@@ -24,6 +24,7 @@ function Home() {
 		>
 			<main className="flex flex-col gap-3" ref={animateRef}>
 				<InputWithButton
+					aria-label="World name"
 					placeholder="Eisenwald"
 					button={
 						<Button icon={<LucideArrowRight />}>
@@ -101,13 +102,15 @@ function NameSuggestions() {
 	return (
 		<div className="flex flex-col gap-3">
 			<Section title="Can't think of a name? Here are some suggestions:">
-				<ul className="flex max-h-[480px] flex-col gap-2 overflow-y-auto">
-					{unique(nameSuggestionsQuery.data.suggestions).map((name) => (
-						<li key={name}>
-							<Button icon={null}>{name}</Button>
-						</li>
-					))}
-				</ul>
+				<div className="max-h-[480px] overflow-y-auto">
+					<ul className="flex flex-col gap-2">
+						{unique(nameSuggestionsQuery.data.suggestions).map((name) => (
+							<li key={name}>
+								<Button icon={null}>{name}</Button>
+							</li>
+						))}
+					</ul>
+				</div>
 			</Section>
 
 			<Section title="None of these feel right? Pick a theme to see more:">
@@ -171,9 +174,12 @@ function Section({
 	title: string
 	children: React.ReactNode
 }) {
+	const headingId = useId()
 	return (
-		<section>
-			<p className="text-primary-200 mb-1">{title}</p>
+		<section aria-labelledby={headingId}>
+			<h2 id={headingId} className="text-primary-200 mb-1">
+				{title}
+			</h2>
 			{children}
 		</section>
 	)
