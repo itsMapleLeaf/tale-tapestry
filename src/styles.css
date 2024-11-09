@@ -73,8 +73,28 @@
 	@apply mx-auto w-full max-w-[1000px] px-4;
 }
 
+@utility panel {
+	@apply bg-primary-900/50 border-primary-800;
+}
+
+@utility panel-hovered {
+	@apply bg-primary-900 border-primary-700;
+}
+
+@utility panel-pressed {
+	@apply bg-primary-800/75 border-primary-600;
+}
+
+@utility panel-interactive {
+	@apply panel hover:panel-hovered active:panel-pressed transition-colors active:duration-0;
+}
+
 @utility button {
-	@apply bg-primary-900/50 hover:bg-primary-900 border-primary-800 hover:border-primary-700 flex h-10 items-center gap-2 rounded border px-3 transition-colors;
+	@apply panel-interactive flex h-10 items-center gap-2 rounded border px-3;
+}
+
+@utility input {
+	@apply panel-interactive not-active:focus:panel-hovered h-10 rounded px-3 outline-none;
 }
 
 @utility fade-rise {
