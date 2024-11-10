@@ -79,7 +79,7 @@
 }
 
 @utility panel {
-	@apply bg-primary-900/50 border-primary-800;
+	@apply bg-primary-900/50 border-primary-800 block rounded border;
 }
 
 @utility panel-hovered {
@@ -104,4 +104,16 @@
 
 @utility fade-rise {
 	@apply translate-y-1 opacity-0 transition ease-in data-[enter]:translate-y-0 data-[enter]:opacity-100 data-[enter]:ease-out;
+}
+
+@utility heading-primary {
+	@apply text-3xl font-extralight;
+}
+
+@utility heading-secondary {
+	@apply text-xl font-light;
+}
+
+@utility subtext {
+	@apply text-primary-300 text-base;
 }

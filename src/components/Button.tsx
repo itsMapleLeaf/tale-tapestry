@@ -1,39 +1,42 @@
-import { useMutation } from "@tanstack/react-query"
-import { ComponentProps, ReactElement } from "react"
+import {
+	cloneElement,
+	ComponentProps,
+	HTMLAttributes,
+	ReactElement,
+} from "react"
+import { useFormStatus } from "react-dom"
 import { twMerge } from "tailwind-merge"
 import { LoadingIcon } from "./LoadingIcon.tsx"
 
 export interface ButtonProps extends ComponentProps<"button"> {
 	icon: ReactElement | null
 	pending?: boolean
-	onClick?: (event: React.MouseEvent) => unknown
+	render?: ReactElement<HTMLAttributes<HTMLElement>>
 }
 
 export function Button({
 	icon,
 	pending,
+	render = <button type="button" />,
 	children,
-	onClick,
 	...props
 }: ButtonProps) {
-	const handleClick = useMutation({
-		mutationFn: async (event: React.MouseEvent) => onClick?.(event),
+	const status = useFormStatus()
+
+	return cloneElement(render, {
+		className: twMerge("button", props.className),
+		children: (
+			<>
+				{" "}
+				<div className="*:size-5 empty:hidden">
+					{(pending ?? status.pending) ? (
+						<LoadingIcon className="animate-spin" />
+					) : (
+						icon
+					)}
+				</div>
+				{children}
+			</>
+		),
 	})
-	return (
-		<button
-			type="button"
-			{...props}
-			className={twMerge("button", props.className)}
-			onClick={handleClick.mutate}
-		>
-			<div className="*:size-5 empty:hidden">
-				{(pending ?? handleClick.isPending) ? (
-					<LoadingIcon className="animate-spin" />
-				) : (
-					icon
-				)}
-			</div>
-			{children}
-		</button>
-	)
 }

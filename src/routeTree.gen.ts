@@ -14,6 +14,8 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as ProtectedImport } from './routes/_protected'
 import { Route as ProtectedIndexImport } from './routes/_protected/index'
 import { Route as ProtectedSettingsImport } from './routes/_protected/settings'
+import { Route as ProtectedWorldsNewImport } from './routes/_protected/worlds.new'
+import { Route as ProtectedWorldsIdImport } from './routes/_protected/worlds.$id'
 
 // Create/Update Routes
 
@@ -31,6 +33,18 @@ const ProtectedIndexRoute = ProtectedIndexImport.update({
 const ProtectedSettingsRoute = ProtectedSettingsImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+
+const ProtectedWorldsNewRoute = ProtectedWorldsNewImport.update({
+  id: '/worlds/new',
+  path: '/worlds/new',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+
+const ProtectedWorldsIdRoute = ProtectedWorldsIdImport.update({
+  id: '/worlds/$id',
+  path: '/worlds/$id',
   getParentRoute: () => ProtectedRoute,
 } as any)
 
@@ -59,6 +73,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedIndexImport
       parentRoute: typeof ProtectedImport
     }
+    '/_protected/worlds/$id': {
+      id: '/_protected/worlds/$id'
+      path: '/worlds/$id'
+      fullPath: '/worlds/$id'
+      preLoaderRoute: typeof ProtectedWorldsIdImport
+      parentRoute: typeof ProtectedImport
+    }
+    '/_protected/worlds/new': {
+      id: '/_protected/worlds/new'
+      path: '/worlds/new'
+      fullPath: '/worlds/new'
+      preLoaderRoute: typeof ProtectedWorldsNewImport
+      parentRoute: typeof ProtectedImport
+    }
   }
 }
 
@@ -67,11 +95,15 @@ declare module '@tanstack/react-router' {
 interface ProtectedRouteChildren {
   ProtectedSettingsRoute: typeof ProtectedSettingsRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
+  ProtectedWorldsIdRoute: typeof ProtectedWorldsIdRoute
+  ProtectedWorldsNewRoute: typeof ProtectedWorldsNewRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedSettingsRoute: ProtectedSettingsRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,
+  ProtectedWorldsIdRoute: ProtectedWorldsIdRoute,
+  ProtectedWorldsNewRoute: ProtectedWorldsNewRoute,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
@@ -82,11 +114,15 @@ export interface FileRoutesByFullPath {
   '': typeof ProtectedRouteWithChildren
   '/settings': typeof ProtectedSettingsRoute
   '/': typeof ProtectedIndexRoute
+  '/worlds/$id': typeof ProtectedWorldsIdRoute
+  '/worlds/new': typeof ProtectedWorldsNewRoute
 }
 
 export interface FileRoutesByTo {
   '/settings': typeof ProtectedSettingsRoute
   '/': typeof ProtectedIndexRoute
+  '/worlds/$id': typeof ProtectedWorldsIdRoute
+  '/worlds/new': typeof ProtectedWorldsNewRoute
 }
 
 export interface FileRoutesById {
@@ -94,14 +130,22 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/_protected/settings': typeof ProtectedSettingsRoute
   '/_protected/': typeof ProtectedIndexRoute
+  '/_protected/worlds/$id': typeof ProtectedWorldsIdRoute
+  '/_protected/worlds/new': typeof ProtectedWorldsNewRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '' | '/settings' | '/'
+  fullPaths: '' | '/settings' | '/' | '/worlds/$id' | '/worlds/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/settings' | '/'
-  id: '__root__' | '/_protected' | '/_protected/settings' | '/_protected/'
+  to: '/settings' | '/' | '/worlds/$id' | '/worlds/new'
+  id:
+    | '__root__'
+    | '/_protected'
+    | '/_protected/settings'
+    | '/_protected/'
+    | '/_protected/worlds/$id'
+    | '/_protected/worlds/new'
   fileRoutesById: FileRoutesById
 }
 
@@ -130,7 +174,9 @@ export const routeTree = rootRoute
       "filePath": "_protected.tsx",
       "children": [
         "/_protected/settings",
-        "/_protected/"
+        "/_protected/",
+        "/_protected/worlds/$id",
+        "/_protected/worlds/new"
       ]
     },
     "/_protected/settings": {
@@ -139,6 +185,14 @@ export const routeTree = rootRoute
     },
     "/_protected/": {
       "filePath": "_protected/index.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/worlds/$id": {
+      "filePath": "_protected/worlds.$id.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/worlds/new": {
+      "filePath": "_protected/worlds.new.tsx",
       "parent": "/_protected"
     }
   }

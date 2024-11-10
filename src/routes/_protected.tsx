@@ -1,7 +1,7 @@
 import { useAuthActions } from "@convex-dev/auth/react"
 import { convexQuery, useConvexAuth } from "@convex-dev/react-query"
 import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Outlet } from "@tanstack/react-router"
+import { Outlet, createFileRoute } from "@tanstack/react-router"
 import { api } from "../../convex/_generated/api.js"
 
 export const Route = createFileRoute("/_protected")({
