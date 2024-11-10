@@ -1,8 +1,7 @@
 import { ConvexError, v } from "convex/values"
-import OpenAI from "openai"
-import { zodResponseFormat } from "openai/helpers/zod"
 import { z } from "zod"
 import { action, internalMutation, mutation, query } from "./_generated/server"
+import { createParsedCompletion } from "./ai.ts"
 import { ensureAuthUser, ensureAuthUserId } from "./auth.ts"
 
 export const create = mutation({
@@ -79,39 +78,12 @@ export const suggestNames = action({
 			throw new ConvexError("No OpenRouter API key set")
 		}
 
-		const openai = new OpenAI({
-			baseURL: "https://openrouter.ai/api/v1",
-			apiKey: user.openRouterApiKey!,
-			fetch: async (...args) => {
-				console.debug("suggestNames", ...args)
-				const res = await fetch(...args)
-				console.debug(await res.clone().json())
-				return res
-			},
-		})
-
-		const completion = await openai.beta.chat.completions.parse({
+		return await createParsedCompletion({
+			apiKey: user.openRouterApiKey,
 			model: "openai/gpt-4o-mini-2024-07-18",
-			messages: [
-				{
-					role: "system",
-					content:
-						"Your job is to generate suggestions for the user to create their content.",
-				},
-				{
-					role: "user",
-					content: `Generate a list of 20 unique name suggestions for a fictional world with the theme "${args.theme}".`,
-				},
-			],
-			response_format: zodResponseFormat(
-				z.object({ suggestions: z.string().array() }),
-				"suggestionList",
-			),
-			provider: {
-				require_parameters: true,
-			},
+			systemMessage: `Your job is to generate suggestions for the user to create their content.`,
+			userMessage: `Generate a list of 20 unique name suggestions for a fictional world with the theme "${args.theme}".`,
+			schema: z.object({ suggestions: z.string().array() }),
 		})
-
-		return completion.choices[0]?.message.parsed
 	},
 })
