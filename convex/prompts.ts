@@ -133,7 +133,7 @@ export const populate = internalAction({
 			})
 
 			const completion = await openai.chat.completions.create({
-				model: "nousresearch/hermes-3-llama-3.1-405b",
+				model: "nousresearch/hermes-3-llama-3.1-70b",
 				messages: [
 					{
 						role: "system",
@@ -144,9 +144,16 @@ export const populate = internalAction({
 							`Here are the player's details and current state:`,
 							JSON.stringify({ world, character, location }, null, "\t"),
 							``,
-							`First: describe the scenario. Add lots of flavorful details.`,
+							`First, describe the scenario with lots of flavorful details.`,
 							``,
 							`Then, ask what they want to do next, and give some bullet point suggestions for things they could do.`,
+							``,
+							`Finally: the world needs to update. With your response, include suggestions for...`,
+							`- New characters`,
+							`- New locations`,
+							`- New or updated properties for each`,
+							``,
+							`Where properties can be anything. For characters, it could be their appearance, their mood, or their current goals. For locations, it can be how hot or cold they are, how crowded it is, or if there's something else going on.`,
 						].join("\n\n"),
 					},
 				],

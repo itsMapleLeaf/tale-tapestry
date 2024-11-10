@@ -5,7 +5,7 @@ import { LucidePlay } from "lucide-react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { Button } from "../../components/Button.tsx"
-import { Input } from "../../components/Input.tsx"
+import { InputForm } from "../../components/InputForm.tsx"
 import { LoadingIcon } from "../../components/LoadingIcon.tsx"
 import { Onboarding } from "../../components/Onboarding.tsx"
 import { PageLayout } from "../../components/PageLayout.tsx"
@@ -39,14 +39,17 @@ function WorldRouteComponent() {
 					</Button>
 				</form>
 			) : (
-				<form action={() => {}}>
-					<p className="mb-4 whitespace-pre-line">{prompt.message}</p>
+				<div className="flex flex-col gap-4">
+					<p className="whitespace-pre-line">{prompt.message}</p>
 					{prompt.pending ? (
 						<LoadingIcon />
 					) : (
-						<Input placeholder="Do something..." />
+						<InputForm
+							placeholder="Do something..."
+							action={() => createPrompt.mutate({ worldId })}
+						/>
 					)}
-				</form>
+				</div>
 			)}
 		</PageLayout>
 	)
