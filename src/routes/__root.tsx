@@ -5,6 +5,8 @@ import {
 	ScrollRestoration,
 } from "@tanstack/react-router"
 import { Meta } from "@tanstack/start"
+import { Suspense } from "react"
+import { LoadingCover } from "../components/LoadingCover.tsx"
 
 export const Route = createRootRouteWithContext<{
 	queryClient: QueryClient
@@ -27,25 +29,11 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
 	return (
 		<>
-			<Outlet />
+			<Suspense fallback={<LoadingCover />}>
+				<Outlet />
+			</Suspense>
 			<Meta />
 			<ScrollRestoration />
 		</>
 	)
 }
-
-/*
-function RootDocument({ children }: { children: React.ReactNode }) {
-	return (
-		<Html>
-			<Head>
-				<Meta />
-			</Head>
-			<Body>
-				{children}
-				<Scripts />
-			</Body>
-		</Html>
-	)
-}
-*/

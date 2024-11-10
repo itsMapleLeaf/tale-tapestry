@@ -1,12 +1,11 @@
 import { convexQuery } from "@convex-dev/react-query"
-import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { useSuspenseQuery } from "@tanstack/react-query"
+import { Link, createFileRoute } from "@tanstack/react-router"
 import { intlFormatDistance } from "date-fns"
 import { LucideGlobe, LucidePlus } from "lucide-react"
 import { api } from "../../../convex/_generated/api"
 import { Button } from "../../components/Button.tsx"
 import { ListCard } from "../../components/ListCard.tsx"
-import { LoadingIcon } from "../../components/LoadingIcon.tsx"
 import { PageLayout } from "../../components/PageLayout.tsx"
 
 export const Route = createFileRoute("/_protected/")({
@@ -14,21 +13,7 @@ export const Route = createFileRoute("/_protected/")({
 })
 
 function Home() {
-	const worlds = useQuery(convexQuery(api.worlds.list, {}))
-
-	if (worlds.isError) {
-		return (
-			<main className="container">
-				<p>Failed to load worlds.</p>
-				<pre>{worlds.error.message}</pre>
-			</main>
-		)
-	}
-
-	if (!worlds.data) {
-		return <LoadingIcon />
-	}
-
+	const worlds = useSuspenseQuery(convexQuery(api.worlds.list, {}))
 	return (
 		<PageLayout title="Choose a world">
 			<div className="flex flex-col gap-2">
