@@ -32,7 +32,25 @@ export const get = query({
 		if (!world || world.creatorId !== userId) {
 			return null
 		}
-		return world
+
+		const player = await ctx.db
+			.query("players")
+			.withIndex("userId_worldId", (q) =>
+				q.eq("userId", userId).eq("worldId", world._id),
+			)
+			.unique()
+
+		const character =
+			player?.currentCharacterId &&
+			(await ctx.db.get(player.currentCharacterId))
+
+		const location = character && (await ctx.db.get(character.locationId))
+
+		return {
+			world,
+			character,
+			location,
+		}
 	},
 })
 
@@ -86,4 +104,58 @@ export const suggestNames = action({
 			schema: z.object({ suggestions: z.string().array() }),
 		})
 	},
+})
+
+export const onboard = mutation({
+	args: {
+		name: v.string(),
+		pronouns: v.string(),
+		description: v.string(),
+		location: v.string(),
+		time: v.string(),
+		worldId: v.id("worlds"),
+	},
+	async handler(ctx, args) {
+		const userId = await ensureAuthUserId(ctx)
+
+		const locationId = await ctx.db.insert("locations", {
+			name: args.location,
+			properties: {},
+			worldId: args.worldId,
+		})
+
+		const characterId = await ctx.db.insert("characters", {
+			name: args.name,
+			pronouns: args.pronouns,
+			properties: {},
+			worldId: args.worldId,
+			locationId,
+		})
+
+		const player = await ctx.db
+			.query("players")
+			.withIndex("userId_worldId", (q) =>
+				q.eq("userId", userId).eq("worldId", args.worldId),
+			)
+			.unique()
+
+		if (!player) {
+			await ctx.db.insert("players", {
+				userId,
+				worldId: args.worldId,
+				currentCharacterId: characterId,
+			})
+		} else {
+			await ctx.db.patch(player._id, {
+				currentCharacterId: characterId,
+			})
+		}
+	},
+})
+
+export const getState = query({
+	args: {
+		worldId: v.id("worlds"),
+	},
+	async handler(ctx, { worldId }) {},
 })

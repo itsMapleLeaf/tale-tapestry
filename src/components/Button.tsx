@@ -38,5 +38,6 @@ export function Button({
 				{children}
 			</>
 		),
+		...props,
 	})
 }

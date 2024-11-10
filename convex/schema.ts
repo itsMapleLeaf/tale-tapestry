@@ -12,14 +12,37 @@ export default defineSchema({
 	}).index("email", ["email"]),
 
 	worlds: defineTable({
-		creatorId: v.id("users"),
 		name: v.string(),
+		creatorId: v.id("users"),
 	}).index("creatorId", ["creatorId"]),
 
-	prompts: defineTable({
+	players: defineTable({
 		userId: v.id("users"),
-		message: v.string(),
-		response: v.string(),
-		pending: v.boolean(),
-	}).index("userId", ["userId"]),
+		worldId: v.id("worlds"),
+		currentCharacterId: v.union(v.id("characters"), v.null()),
+	})
+		.index("worldId", ["worldId"])
+		.index("userId_worldId", ["userId", "worldId"]),
+
+	locations: defineTable({
+		name: v.string(),
+		properties: v.record(v.string(), v.string()),
+		worldId: v.id("worlds"),
+	}).index("worldId", ["worldId"]),
+
+	characters: defineTable({
+		name: v.string(),
+		pronouns: v.string(),
+		properties: v.record(v.string(), v.string()),
+		worldId: v.id("worlds"),
+		locationId: v.id("locations"),
+	})
+		.index("worldId", ["worldId"])
+		.index("locationId", ["locationId"]),
+
+	prompts: defineTable({
+		content: v.string(),
+		actions: v.array(v.object({ name: v.string() })),
+		characterId: v.id("characters"),
+	}).index("characterId", ["characterId"]),
 })
