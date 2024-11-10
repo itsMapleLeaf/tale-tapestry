@@ -9,6 +9,7 @@ declare global {
 		env: {
 			DISCORD_CLIENT_ID: string
 			DISCORD_CLIENT_SECRET: string
+			CONVEX_SITE_URL: string
 		}
 	}
 }
