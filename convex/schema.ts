@@ -19,7 +19,14 @@ export default defineSchema({
 	players: defineTable({
 		userId: v.id("users"),
 		worldId: v.id("worlds"),
-		currentCharacterId: v.union(v.id("characters"), v.null()),
+		currentCharacterId: v.optional(v.union(v.id("characters"), v.null())),
+		currentPrompt: v.optional(
+			v.object({
+				pending: v.boolean(),
+				message: v.string(),
+				actions: v.array(v.string()),
+			}),
+		),
 	})
 		.index("worldId", ["worldId"])
 		.index("userId_worldId", ["userId", "worldId"]),

@@ -3,6 +3,7 @@ import { z } from "zod"
 import { action, internalMutation, mutation, query } from "./_generated/server"
 import { createParsedCompletion } from "./ai.ts"
 import { ensureAuthUser, ensureAuthUserId } from "./auth.ts"
+import { getPlayer } from "./players.ts"
 
 export const create = mutation({
 	args: {
@@ -50,6 +51,7 @@ export const get = query({
 			world,
 			character,
 			location,
+			prompt: player?.currentPrompt,
 		}
 	},
 })
@@ -115,34 +117,29 @@ export const onboard = mutation({
 		time: v.string(),
 		worldId: v.id("worlds"),
 	},
-	async handler(ctx, args) {
+	async handler(ctx, { worldId, ...args }) {
 		const userId = await ensureAuthUserId(ctx)
 
 		const locationId = await ctx.db.insert("locations", {
 			name: args.location,
 			properties: {},
-			worldId: args.worldId,
+			worldId: worldId,
 		})
 
 		const characterId = await ctx.db.insert("characters", {
 			name: args.name,
 			pronouns: args.pronouns,
 			properties: {},
-			worldId: args.worldId,
+			worldId: worldId,
 			locationId,
 		})
 
-		const player = await ctx.db
-			.query("players")
-			.withIndex("userId_worldId", (q) =>
-				q.eq("userId", userId).eq("worldId", args.worldId),
-			)
-			.unique()
+		const player = await getPlayer(ctx, userId, worldId)
 
 		if (!player) {
 			await ctx.db.insert("players", {
 				userId,
-				worldId: args.worldId,
+				worldId: worldId,
 				currentCharacterId: characterId,
 			})
 		} else {
@@ -151,11 +148,4 @@ export const onboard = mutation({
 			})
 		}
 	},
-})
-
-export const getState = query({
-	args: {
-		worldId: v.id("worlds"),
-	},
-	async handler(ctx, { worldId }) {},
 })
