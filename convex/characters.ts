@@ -14,11 +14,20 @@ export const create = mutation({
 	},
 })
 
-export const list = query({
+export const listByWorld = query({
 	args: { worldId: v.id("worlds") },
 	handler: async (ctx, { worldId }) => {
 		await ensureViewerWorldAccess(ctx, worldId)
 		return await getManyFrom(ctx.db, "characters", "worldId", worldId)
+	},
+})
+
+export const listByLocation = query({
+	args: { locationId: v.id("locations") },
+	handler: async (ctx, { locationId }) => {
+		const location = await getOrThrow(ctx, locationId)
+		await ensureViewerWorldAccess(ctx, location.worldId)
+		return await getManyFrom(ctx.db, "characters", "locationId", locationId)
 	},
 })
 

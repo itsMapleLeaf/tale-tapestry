@@ -22,7 +22,7 @@ function WorldRouteComponent() {
 	)
 
 	const { data: characters } = useSuspenseQuery(
-		convexQuery(api.characters.list, { worldId }),
+		convexQuery(api.characters.listByWorld, { worldId }),
 	)
 
 	if (!world) {

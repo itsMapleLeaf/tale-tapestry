@@ -5,6 +5,7 @@ import { zodResponseFormat } from "openai/helpers/zod.mjs"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { z } from "zod"
 import { pick } from "../src/lib/object.ts"
+import { dedent } from "../src/lib/text.ts"
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
 import { worldMutationInputSchema } from "./mutations.ts"
@@ -27,6 +28,14 @@ export const create = action({
 		const location = await ctx.runQuery(api.locations.get, {
 			locationId: character.locationId,
 		})
+
+		const charactersPresent = await ctx.runQuery(
+			api.characters.listByLocation,
+			{
+				locationId: location._id,
+			},
+		)
+
 		const latestPrompt = await ctx.runQuery(api.prompts.getLatest, {
 			characterId,
 		})
@@ -63,26 +72,35 @@ export const create = action({
 					...pick(character, ["name", "pronouns", "properties"]),
 				},
 			},
-			currentLocation: pick(location, ["name", "properties"]),
-			otherCharactersPresent: [],
+			currentLocation: {
+				...pick(location, ["name", "properties"]),
+				charactersPresent: charactersPresent.map((character) =>
+					pick(character, ["name", "pronouns", "properties"]),
+				),
+			},
 		}
 
 		const actionPromptMessages: ChatCompletionMessageParam[] = [
 			{
 				role: "system",
-				content: `The user is playing in an evolving world simulation. They make actions in this world by responding to action prompts created by you.
+				content: dedent`
+					The user is playing in an evolving world simulation. They make actions in this world by responding to action prompts created by you.
 
-				When describing the scene, please ensure the following:
-				- Write in second person from the perspective of their character.
-				- Add things for them to interact with.
-				- Mention locations and other entities using the correct possessive nouns. For example: if a location is called "Allison's Library", and the player is playing Allison, call it "your library".
-				- Mention adjacent locations or characters that could theoretically exist here, even if they aren't in the world state.
-				- Write in beige prose. Use concrete everyday words with their literal meaning.
-				- Be specific.
-				- Use colloquial dialog.
-				- Respond with a few short paragraphs no longer than 100 words.
-				- Use lots of line breaks for readability.
-				- Avoid transitional statements like "what will you do next" or "adventures await".
+					When describing the scene, please ensure the following:
+					- Write in second person from the perspective of their character.
+					- Add things for them to interact with.
+					- Modify the scene from the current world state in sensible ways.
+					- Mention locations and other entities using the correct possessive nouns. For example: if a location is called "Allison's Library", and the player is playing Allison, call it "your library".
+					- Mention adjacent locations or characters that could theoretically exist here, even if they aren't in the world state.
+					- Write in beige prose. Use concrete everyday words with their literal meaning.
+					- Be specific.
+					- Use colloquial dialog.
+					- Respond with a few short paragraphs no longer than 100 words.
+					- Use lots of line breaks for readability.
+					- Avoid transitional statements like "what will you do next" or "adventures await".
+					- Avoid speaking or making any other actions on behalf of the player, unless it's in direct response to their action.
+					- Only advance time forward, and not backward.
+					- Only advance time if it makes sense to do so, e.g. if the character is travelling a long distance, or doing one activity for a while.
 				`,
 			},
 			{
@@ -102,10 +120,20 @@ export const create = action({
 				content: latestPrompt.content,
 			})
 			if (action) {
-				actionPromptMessages.push({
-					role: "user",
-					content: `Here's what I would like to do: ${action}`,
-				})
+				actionPromptMessages.push(
+					{
+						role: "system",
+						content: dedent`
+							Give the player something to react to, such as another character saying something to them, or something else happening in the scene. Don't end the prompt with an action or dialog from their character.
+						`,
+					},
+					{
+						role: "user",
+						content: dedent`
+							Here's what I would like to do: ${action}
+						`,
+					},
+				)
 			}
 		}
 
@@ -156,30 +184,57 @@ export const create = action({
 						},
 						{
 							role: "user",
-							content: `Based on the scene, what changes need to be made to the world state? Return an array of mutations that would update the world to match the scene.
+							content: dedent`
+								Based on the scene, return a list of changes that need to be made to make the world state match the scene.
 
-							Available mutation types:
-							- createCharacter: Record the existence of a character in the scene that's not in the world state. Always give the character a proper name, like "Liliac" instead of "Allison's Mom". If no name is mentioned in the source prompt, make one up.
+								Available change types:
+								- setWorldTime: Update the world's time
+								- createCharacter: Record the existence of a character in the scene that's not in the world state.
+								- setCharacterLocation: Move a character to a new location. This should be very precise, to the level of rooms in a building, such as "Allison's Bedroom", "Amara's Study", or "The Kitchen of Lily's Cottage". If outside, name the specific area that they're in, such as a park, a garden, or a parking lot.
+								- setCharacterPronouns: Update a character's pronouns
+								- createLocation: Record the existence of a location in the scene that's not in the world state.
+								- setProperty: Set a property on a character or location.
+								- removeProperty: Remove a property from a character or location when it no longer applies
 
-							- createLocation: Record the existence of a location in the scene that's not in the world state
+								Look for the following kinds of changes (and anything else similar):
+								- appearance
+								- for characters:
+									- outfit
+									- possessions
+									- mood
+									- attire
+									- activity
+									- occupation
+									- hobbies
+									- expertise
+									- energy level
+									- goals
+									- injuries
+									- relationships to other characters (siblings, cousins, parents, friends, lovers, spouses, etc.)
+									- species
+									- romantic preferences and/or sexual orientation, if evident
+								- for locations:
+									- spaciousness
+									- neatness
+									- notably hot or cold
+									- messiness (e.g. of bedrooms)
+									- noise / crowdedness / soundscape
+									- brightness
+									- points or items of interest
 
-							- setWorldTime: Update the world's time
+								Avoid setting properties for the following:
+								- character locations
+								- characters present in locations
+								- dialog
 
-							- setCharacterLocation: Move a character to a new location. This should be very precise, to the level of rooms in a building, such as "Allison's Bedroom", "Amara's Study", or "The Kitchen of Lily's Cottage". If outside, name the specific area that they're in, such as a park, a garden, or a parking lot.
-
-							- setCharacterPronouns: Update a character's pronouns
-
-							- setProperty: Set a property on a character or location. If you want to set multiple properties, return multiple mutation objects. If several values would match the same key, combine their values in a flat comma-separated list. Do not use this to set a character's location.
-
-							- removeProperty: Remove a property from a character or location when it no longer applies
-
-							Be thorough and comprehensive. Derive any assumed information not already stated. For example: if a character is looking for their magic staff, that must mean they're a magician. This would become properties like "occupation: magician" and "magicExpertise: ice".
-
-							Also look for things like the character's current goal, their mood, their exhaustion level, and anything else helpful to keep track of.
-
-							Keep track of relations between characters as well. This could be done with properties like "siblings: Amelia, Rosemary", "mother: Hazel", and so on.
-
-							Give new characters and locations unambiguous names. For example: when making a "Garden" location while in "Allison's House", the location should be called "Allison's Garden". Similarly, if we're in "Whisperwood Forest" and we find an oasis, it could be called "An Oasis in Whisperwood Forest".`,
+								Please follow these guidelines:
+								- Be thorough and comprehensive, and derive any assumed information not already stated. For example: if a character is looking for their magic staff, that must mean they're a magician. This would become properties like "occupation: magician" and "magicExpertise: ice".
+								- Always give proper names, like "Liliac" instead of "Allison's Mom". If no name is mentioned in the prompt, make one up.
+								- If you want to set multiple properties, return multiple "setProperty" changes.
+								- If several property values would match the same key, combine their values in a flat comma-separated list.
+								- Use only "setCharacterLocation" to set a character's location. Do not use "setProperty" to set a character's location.
+								- Use unambiguous names. For example: a new "Garden" location while in "Allison's House" should be called "Allison's Garden". If we're in "Whisperwood Forest" and we find an oasis, it could be called "An Oasis in Whisperwood Forest".
+							`,
 						},
 					],
 					response_format: zodResponseFormat(

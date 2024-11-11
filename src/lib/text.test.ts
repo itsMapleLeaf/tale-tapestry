@@ -47,3 +47,12 @@ test("preserves indentation relative to the least indented line", () => {
 		"function example() {\n    const x = 1;\n        const y = 2;\n}",
 	)
 })
+
+test("handles tab indentation", () => {
+	const result = dedent`
+		first line
+			indented with tab
+		back to first level
+	`
+	expect(result).toBe("first line\n\tindented with tab\nback to first level")
+})
