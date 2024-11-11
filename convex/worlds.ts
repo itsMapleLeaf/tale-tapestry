@@ -177,6 +177,84 @@ Return the following in a JSON object:
 	},
 })
 
+export const stateUpdateSchema = z.object({
+	characters: z.array(
+		z.object({
+			name: z.string(),
+			pronouns: z.string(),
+			properties: z.array(z.object({ key: z.string(), value: z.string() })),
+		}),
+	),
+	locations: z.array(
+		z.object({
+			name: z.string(),
+			properties: z.array(z.object({ key: z.string(), value: z.string() })),
+		}),
+	),
+	world: z.object({
+		time: z.string(),
+	}),
+})
+
+export const applyStateUpdate = internalMutation(
+	async (
+		ctx,
+		{
+			worldId,
+			promptId,
+			update,
+		}: {
+			worldId: Id<"worlds">
+			promptId: Id<"prompts">
+			update: z.infer<typeof stateUpdateSchema>
+		},
+	) => {
+		const { characters, locations, world: worldUpdate } = update
+
+		// Store the update in the prompt
+		await ctx.db.patch(promptId, { stateUpdate: update })
+
+		for (const update of characters) {
+			const character = await ctx.db
+				.query("characters")
+				.withSearchIndex("search_name", (q) =>
+					q.search("name", update.name).eq("worldId", worldId),
+				)
+				.first()
+
+			if (character) {
+				await ctx.db.patch(character._id, {
+					pronouns: update.pronouns,
+					properties: Object.fromEntries(
+						update.properties.map(({ key, value }) => [key, value]),
+					),
+				})
+			}
+		}
+
+		for (const update of locations) {
+			const location = await ctx.db
+				.query("locations")
+				.withSearchIndex("search_name", (q) =>
+					q.search("name", update.name).eq("worldId", worldId),
+				)
+				.first()
+
+			if (location) {
+				await ctx.db.patch(location._id, {
+					properties: Object.fromEntries(
+						update.properties.map(({ key, value }) => [key, value]),
+					),
+				})
+			}
+		}
+
+		await ctx.db.patch(worldId, {
+			time: worldUpdate.time,
+		})
+	},
+)
+
 export async function ensureViewerWorldAccess(
 	ctx: QueryCtx,
 	worldId: Id<"worlds">,

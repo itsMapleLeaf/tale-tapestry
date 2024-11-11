@@ -93,11 +93,19 @@ function PromptList({
 					<p className="whitespace-pre-line opacity-40 transition-opacity hover:opacity-70">
 						{prompt.content}
 					</p>
+					{prompt.stateUpdate && (
+						<div className="opacity-40 transition-opacity hover:opacity-70">
+							<StateUpdateSummary stateUpdate={prompt.stateUpdate} />
+						</div>
+					)}
 				</Fragment>
 			))}
 			<div className="vstack">
 				<p className="text-lg whitespace-pre-line">{current.content}</p>
 				{current.status === "pending" && <LoadingIcon />}
+				{current.stateUpdate && current.status !== "pending" && (
+					<StateUpdateSummary stateUpdate={current.stateUpdate} />
+				)}
 			</div>
 			{current.status === "pending" ? null : (
 				<InputForm
@@ -107,6 +115,52 @@ function PromptList({
 					}
 				/>
 			)}
+		</div>
+	)
+}
+
+function StateUpdateSummary({
+	stateUpdate,
+}: {
+	stateUpdate: NonNullable<Doc<"prompts">["stateUpdate"]>
+}) {
+	const items = [
+		...stateUpdate.characters.map((character) => ({
+			name: character.name,
+			properties: character.properties.map(({ key, value }) => ({
+				key,
+				value,
+			})),
+		})),
+		...stateUpdate.locations.map((location) => ({
+			name: location.name,
+			properties: location.properties.map(({ key, value }) => ({
+				key,
+				value,
+			})),
+		})),
+		{
+			name: "World",
+			properties: [{ key: "time", value: stateUpdate.world.time }],
+		},
+	].filter((item) => item.properties.length > 0)
+
+	if (items.length === 0) return null
+
+	return (
+		<div className="vstack gap-4 text-sm">
+			{items.map((item) => (
+				<div key={item.name} className="vstack gap-1">
+					<span className="font-medium">{item.name}</span>
+					<ul className="vstack text-primary-300 list-disc gap-0.5 pl-4">
+						{item.properties.map(({ key, value }) => (
+							<li key={key}>
+								<span className="font-medium">{key}</span>: {value}
+							</li>
+						))}
+					</ul>
+				</div>
+			))}
 		</div>
 	)
 }

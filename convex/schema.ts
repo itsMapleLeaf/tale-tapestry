@@ -28,7 +28,12 @@ export default defineSchema({
 		name: v.string(),
 		properties: v.record(v.string(), v.string()),
 		worldId: v.id("worlds"),
-	}).index("worldId", ["worldId"]),
+	})
+		.index("worldId", ["worldId"])
+		.searchIndex("search_name", {
+			searchField: "name",
+			filterFields: ["worldId"],
+		}),
 
 	characters: defineTable({
 		name: v.string(),
@@ -38,7 +43,11 @@ export default defineSchema({
 		locationId: v.id("locations"),
 	})
 		.index("worldId", ["worldId"])
-		.index("locationId", ["locationId"]),
+		.index("locationId", ["locationId"])
+		.searchIndex("search_name", {
+			searchField: "name",
+			filterFields: ["worldId"],
+		}),
 
 	prompts: defineTable({
 		content: v.string(),
@@ -48,6 +57,36 @@ export default defineSchema({
 			v.literal("pending"),
 			v.literal("success"),
 			v.literal("failure"),
+		),
+		stateUpdate: v.optional(
+			v.object({
+				characters: v.array(
+					v.object({
+						name: v.string(),
+						pronouns: v.string(),
+						properties: v.array(
+							v.object({
+								key: v.string(),
+								value: v.string(),
+							}),
+						),
+					}),
+				),
+				locations: v.array(
+					v.object({
+						name: v.string(),
+						properties: v.array(
+							v.object({
+								key: v.string(),
+								value: v.string(),
+							}),
+						),
+					}),
+				),
+				world: v.object({
+					time: v.string(),
+				}),
+			}),
 		),
 	}).index("characterId", ["characterId"]),
 })
