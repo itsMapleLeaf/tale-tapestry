@@ -20,6 +20,7 @@ import type * as http from "../http.js";
 import type * as locations from "../locations.js";
 import type * as players from "../players.js";
 import type * as prompts from "../prompts.js";
+import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 import type * as worlds from "../worlds.js";
 
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   locations: typeof locations;
   players: typeof players;
   prompts: typeof prompts;
+  seed: typeof seed;
   users: typeof users;
   worlds: typeof worlds;
 }>;

@@ -1,7 +1,18 @@
 import { getManyFrom, getOrThrow } from "convex-helpers/server/relationships"
 import { v } from "convex/values"
-import { query } from "./_generated/server"
+import { mutation, query } from "./_generated/server"
+import schema from "./schema.ts"
 import { ensureViewerWorldAccess } from "./worlds.ts"
+
+export const create = mutation({
+	args: {
+		...schema.tables.locations.validator.fields,
+	},
+	handler: async (ctx, args) => {
+		await ensureViewerWorldAccess(ctx, args.worldId)
+		return await ctx.db.insert("locations", args)
+	},
+})
 
 export const list = query({
 	args: { worldId: v.id("worlds") },

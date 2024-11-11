@@ -26,6 +26,7 @@ export default defineSchema({
 	locations: defineTable({
 		name: v.string(),
 		properties: v.record(v.string(), v.string()),
+		time: v.string(),
 		worldId: v.id("worlds"),
 	}).index("worldId", ["worldId"]),
 

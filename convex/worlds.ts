@@ -1,6 +1,7 @@
 import { getOrThrow } from "convex-helpers/server/relationships"
 import { ConvexError, v } from "convex/values"
 import { z } from "zod"
+import { api } from "./_generated/api"
 import { Id } from "./_generated/dataModel"
 import {
 	QueryCtx,
@@ -10,7 +11,7 @@ import {
 	query,
 } from "./_generated/server"
 import { createParsedCompletion } from "./ai.ts"
-import { ensureAuthUser, ensureAuthUserId } from "./users.ts"
+import { ensureApiKey, ensureAuthUser, ensureAuthUserId } from "./users.ts"
 
 export const create = mutation({
 	args: {
@@ -96,7 +97,7 @@ export const suggestNames = action({
 	},
 })
 
-export const onboard = mutation({
+export const createInitialContent = action({
 	args: {
 		name: v.string(),
 		pronouns: v.string(),
@@ -105,19 +106,61 @@ export const onboard = mutation({
 		time: v.string(),
 		worldId: v.id("worlds"),
 	},
-	async handler(ctx, { worldId, ...args }) {
-		await ensureViewerWorldAccess(ctx, worldId)
+	handler: async (
+		ctx,
+		{ name, time, pronouns, description, location, worldId },
+	): Promise<{ characterId: Id<"characters"> }> => {
+		const user = await ctx.runQuery(api.users.me)
+		if (!user) {
+			throw new ConvexError("Unauthorized")
+		}
+		const apiKey = await ensureApiKey(user)
 
-		const locationId = await ctx.db.insert("locations", {
-			name: args.location,
+		const completion = await createParsedCompletion({
+			apiKey,
+			model: "openai/gpt-4o-mini-2024-07-18",
+			systemMessage: `
+You are the backbone of a fictional world simulation. The user is creating their first character and location for the world.
+
+Here is their input:
+${JSON.stringify({ character: { name, pronouns, description }, location: { name: location, time } }, null, 2)}
+
+Return the following in a JSON object:
+- character.name: Their character name, but with proper name casing.
+- character.properties: A list of key/value properties derived from the character description, such as their appearance, likes, dislikes, personality traits, hobbies, and so on. Example: when given "a friendly florist who loves pancakes", you could return [{key:"occupation",value:"florist"},{key:"personality",value:"friendly"},{key:"likes",value:"pancakes"}]. Do not repeat any keys. If you find several values that would fit one key, return a single key/value pair with a comma-separated list of values.
+- location.name: Interpret the given location name from the character's point of view and return a general proper name. For example, with a character named "Allison", "their house" should become "Allison's House".
+- location.time: Interpret the given  time and return either a fuzzy time, like "Early Morning", or a precise clock time rounded to the hour, like "3 PM".
+`.trim(),
+			schema: z.object({
+				character: z.object({
+					name: z.string(),
+					properties: z.array(
+						z.object({
+							key: z.string(),
+							value: z.string(),
+						}),
+					),
+				}),
+				location: z.object({
+					name: z.string(),
+					time: z.string(),
+				}),
+			}),
+		})
+
+		const locationId = await ctx.runMutation(api.locations.create, {
+			name: completion.location.name,
+			time: completion.location.time,
 			properties: {},
 			worldId,
 		})
 
-		const characterId = await ctx.db.insert("characters", {
-			name: args.name,
-			pronouns: args.pronouns,
-			properties: {},
+		const characterId = await ctx.runMutation(api.characters.create, {
+			name: completion.character.name,
+			pronouns,
+			properties: Object.fromEntries(
+				completion.character.properties.map(({ key, value }) => [key, value]),
+			),
 			worldId,
 			locationId,
 		})

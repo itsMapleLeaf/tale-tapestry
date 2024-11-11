@@ -1,4 +1,4 @@
-import { useConvexMutation } from "@convex-dev/react-query"
+import { useConvexAction } from "@convex-dev/react-query"
 import { useMutation } from "@tanstack/react-query"
 import { useState } from "react"
 import { api } from "../../convex/_generated/api"
@@ -12,7 +12,7 @@ interface OnboardingProps {
 
 export function Onboarding({ worldId }: OnboardingProps) {
 	const onboard = useMutation({
-		mutationFn: useConvexMutation(api.worlds.onboard),
+		mutationFn: useConvexAction(api.worlds.createInitialContent),
 	})
 	const [name, setName] = useState<string>()
 	const [pronouns, setPronouns] = useState<string>()
@@ -24,16 +24,25 @@ export function Onboarding({ worldId }: OnboardingProps) {
 		<>
 			{name == null ? (
 				<PageSection title="What's your character's name?">
-					<InputForm placeholder="Maple Rosenfeld" action={setName} />
+					<InputForm
+						placeholder="Maple Rosenfeld"
+						defaultValue="Maple Rosenfeld"
+						action={setName}
+					/>
 				</PageSection>
 			) : pronouns == null ? (
 				<PageSection title="What are their pronouns?">
-					<InputForm placeholder="she/her" action={setPronouns} />
+					<InputForm
+						placeholder="she/her"
+						defaultValue="she/her"
+						action={setPronouns}
+					/>
 				</PageSection>
 			) : description == null ? (
 				<PageSection title="Tell me more about them. (optional)">
 					<InputForm
 						placeholder="She's a friendly, hard-working, earnest, expert ice mage, but a little clumsy, airheaded, and easily frightened."
+						defaultValue="She's a friendly, hard-working, earnest, expert ice mage, but a little clumsy, airheaded, and easily frightened."
 						required={false}
 						multiline
 						action={setDescription}
@@ -41,22 +50,29 @@ export function Onboarding({ worldId }: OnboardingProps) {
 				</PageSection>
 			) : location == null ? (
 				<PageSection title="Where are they now?">
-					<InputForm placeholder="her bedroom" action={setLocation} />
+					<InputForm
+						placeholder="her bedroom"
+						defaultValue="her bedroom"
+						action={setLocation}
+					/>
 				</PageSection>
 			) : time == null ? (
 				<PageSection title="What time is it?">
 					<InputForm
 						placeholder="early morning"
+						defaultValue="early morning"
 						action={async (value) => {
 							setTime(value)
-							await onboard.mutateAsync({
-								worldId,
-								name,
-								pronouns,
-								description,
-								location,
-								time: value,
-							})
+							await onboard
+								.mutateAsync({
+									worldId,
+									name,
+									pronouns,
+									description,
+									location,
+									time: value,
+								})
+								.catch(() => {})
 						}}
 					/>
 				</PageSection>
