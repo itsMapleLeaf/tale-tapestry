@@ -4,12 +4,13 @@ import { ConvexError, Value, v } from "convex/values"
 import OpenAI from "openai"
 import { zodResponseFormat } from "openai/helpers/zod.mjs"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
+import { z } from "zod"
 import { pick } from "../src/lib/object.ts"
 import { api, internal } from "./_generated/api"
 import { action, mutation, query } from "./_generated/server"
 import schema from "./schema.ts"
 import { ensureApiKey, ensureAuthUser } from "./users.ts"
-import { ensureViewerWorldAccess, stateUpdateSchema } from "./worlds.ts"
+import { ensureViewerWorldAccess } from "./worlds.ts"
 
 export const create = mutation({
 	args: {
@@ -37,6 +38,46 @@ export const get = query({
 		return character
 	},
 })
+
+export const actionPromptWorldMutationSchema = z.union([
+	z.object({
+		type: z.literal("setWorldTime"),
+		time: z.string(),
+	}),
+	z.object({
+		type: z.literal("setCharacterLocation"),
+		name: z.string(),
+		location: z.string(),
+	}),
+	z.object({
+		type: z.literal("setCharacterPronouns"),
+		name: z.string(),
+		pronouns: z.string(),
+	}),
+	z.object({
+		type: z.literal("createCharacter"),
+		name: z.string(),
+		pronouns: z.string(),
+		location: z.string(),
+	}),
+	z.object({
+		type: z.literal("createLocation"),
+		name: z.string(),
+	}),
+	z.object({
+		type: z.literal("setProperty"),
+		entityType: z.union([z.literal("character"), z.literal("location")]),
+		entityName: z.string(),
+		key: z.string(),
+		value: z.string(),
+	}),
+	z.object({
+		type: z.literal("removeProperty"),
+		entityType: z.union([z.literal("character"), z.literal("location")]),
+		entityName: z.string(),
+		key: z.string(),
+	}),
+])
 
 export const act = action({
 	args: {
@@ -98,13 +139,31 @@ export const act = action({
 		const actionPromptMessages: ChatCompletionMessageParam[] = [
 			{
 				role: "system",
-				content: `The user is playing in an evolving world simulation. They make actions in this world by responding to action prompts created by you.`,
+				content: `The user is playing in an evolving world simulation. They make actions in this world by responding to action prompts created by you.
+
+				When describing the scene, please ensure the following:
+				- Write in second person from the perspective of their character.
+				- Add things for them to interact with.
+				- Mention locations and other entities using the correct possessive nouns. For example: if a location is called "Allison's Library", and the player is playing Allison, call it "your library".
+				- Mention adjacent locations or characters that could theoretically exist here, even if they aren't in the world state.
+				- Write in beige prose. Use concrete everyday words with their literal meaning.
+				- Be specific.
+				- Use colloquial dialog.
+				- Respond with a few short paragraphs no longer than 100 words.
+				- Use lots of line breaks for readability.
+				- Avoid transitional statements like "what will you do next" or "adventures await".
+				`,
 			},
 			{
 				role: "system",
 				content: `Current world state: ${JSON.stringify(currentWorldState)}`,
 			},
 		]
+
+		actionPromptMessages.push({
+			role: "user",
+			content: `What's currently around me?`,
+		})
 
 		if (latestPrompt) {
 			actionPromptMessages.push({
@@ -114,23 +173,18 @@ export const act = action({
 			if (action) {
 				actionPromptMessages.push({
 					role: "user",
-					content: `Here's what I'll choose to do: ${action}`,
+					content: `Here's what I would like to do: ${action}`,
 				})
 			}
 		}
-
-		actionPromptMessages.push({
-			role: "user",
-			content: `What's currently around me? Write in second person from the perspective of my character. Add things for me to interact with. Mention adjacent locations or characters that could theoretically exist here, even if they aren't in the world state. Don't make my character act for me, like speaking or walking someplace. Respond with a few short paragraphs no longer than 100 words. Use lots of line breaks for readability.`,
-		})
 
 		let actionPrompt = ""
 		try {
 			const completion = await openai.chat.completions.create({
 				// model: "microsoft/wizardlm-2-8x22b",
 				// model: "microsoft/wizardlm-2-7b",
-				// model: "nousresearch/hermes-3-llama-3.1-405b",
-				model: "nousresearch/hermes-3-llama-3.1-70b",
+				model: "nousresearch/hermes-3-llama-3.1-405b",
+				// model: "nousresearch/hermes-3-llama-3.1-70b",
 				messages: actionPromptMessages,
 				stream: true,
 			})
@@ -155,13 +209,14 @@ export const act = action({
 		}
 
 		try {
-			const stateUpdateCompletion = await openai.beta.chat.completions
+			const mutationCompletion = await openai.beta.chat.completions
 				.parse({
 					// model: "microsoft/wizardlm-2-8x22b",
 					// model: "microsoft/wizardlm-2-7b",
 					// model: "nousresearch/hermes-3-llama-3.1-405b",
 					// model: "nousresearch/hermes-3-llama-3.1-70b",
-					model: "openai/gpt-4o-mini-2024-07-18",
+					// model: "openai/gpt-4o-mini-2024-07-18",
+					model: "openai/gpt-4o-2024-08-06",
 					messages: [
 						...actionPromptMessages,
 						{
@@ -170,77 +225,85 @@ export const act = action({
 						},
 						{
 							role: "user",
-							content: `Alright, now create an updated world state. Between the current world state and the current scene, include anything added or changed. For properties, don't repeat keys. If a key could have multiple values, combine them under a single key, separated by commas.`,
+							content: `Based on the scene, what changes need to be made to the world state? Return an array of mutations that would update the world to match the scene.
+
+							Available mutation types:
+							- createCharacter: Record the existence of a character in the scene that's not in the world state. Always give the character a proper name, like "Liliac" instead of "Allison's Mom". If no name is mentioned in the source prompt, make one up.
+
+							- createLocation: Record the existence of a location in the scene that's not in the world state
+
+							- setWorldTime: Update the world's time
+
+							- setCharacterLocation: Move a character to a new location. This should be very precise, to the level of rooms in a building, such as "Allison's Bedroom", "Amara's Study", or "The Kitchen of Lily's Cottage". If outside, name the specific area that they're in, such as a park, a garden, or a parking lot.
+
+							- setCharacterPronouns: Update a character's pronouns
+
+							- setProperty: Set a property on a character or location. If you want to set multiple properties, return multiple mutation objects. If several values would match the same key, combine their values in a flat comma-separated list. Do not use this to set a character's location.
+
+							- removeProperty: Remove a property from a character or location when it no longer applies
+
+							Be thorough and comprehensive. Derive any assumed information not already stated. For example: if a character is looking for their magic staff, that must mean they're a magician. This would become properties like "occupation: magician" and "magicExpertise: ice".
+
+							Also look for things like the character's current goal, their mood, their exhaustion level, and anything else helpful to keep track of.
+
+							Keep track of relations between characters as well. This could be done with properties like "siblings: Amelia, Rosemary", "mother: Hazel", and so on.
+
+							Give new characters and locations unambiguous names. For example: when making a "Garden" location while in "Allison's House", the location should be called "Allison's Garden". Similarly, if we're in "Whisperwood Forest" and we find an oasis, it could be called "An Oasis in Whisperwood Forest".`,
 						},
 					],
-					response_format: zodResponseFormat(stateUpdateSchema, "stateUpdate"),
+					response_format: zodResponseFormat(
+						z.object({
+							mutations: z.array(actionPromptWorldMutationSchema),
+						}),
+						"mutationList",
+					),
 					provider: {
 						require_parameters: true,
 					},
 				})
 				.catch(console.error)
 
-			const stateUpdate = stateUpdateCompletion?.choices[0]?.message.parsed
-			if (!stateUpdate) {
+			const mutationList = mutationCompletion?.choices[0]?.message.parsed
+			if (!mutationList) {
 				throw new ConvexError({
-					message: "No state update given",
-					stateUpdateCompletion: stateUpdateCompletion as unknown as Value,
+					message: "No mutations given",
+					stateUpdateCompletion: mutationCompletion as unknown as Value,
 				})
 			}
 
-			// Filter out unchanged values
-			const filteredUpdate = {
-				characters: stateUpdate.characters
-					.map((char) => {
-						if (char.name === character.name) {
-							const changedProperties = char.properties.filter(
-								({ key, value }) => character.properties[key] !== value,
-							)
-							return changedProperties.length > 0
-								? { ...char, properties: changedProperties }
-								: null
-						}
-						return char
-					})
-					.filter((char): char is NonNullable<typeof char> => char !== null),
-
-				locations: stateUpdate.locations
-					.map((loc) => {
-						if (loc.name === location.name) {
-							const changedProperties = loc.properties.filter(
-								({ key, value }) => location.properties[key] !== value,
-							)
-							return changedProperties.length > 0
-								? { ...loc, properties: changedProperties }
-								: null
-						}
-						return loc
-					})
-					.filter((loc): loc is NonNullable<typeof loc> => loc !== null),
-
-				world: world.time === stateUpdate.world.time ? null : stateUpdate.world,
+			const getRank = (
+				mutation: z.input<typeof actionPromptWorldMutationSchema>,
+			) => {
+				switch (mutation.type) {
+					case "createLocation":
+						return 0
+					case "createCharacter":
+						return 1
+					default:
+						return 9999
+				}
 			}
 
-			// Only apply and store updates if there are actual changes
-			if (
-				filteredUpdate.characters.length > 0 ||
-				filteredUpdate.locations.length > 0 ||
-				filteredUpdate.world
-			) {
-				await ctx.runMutation(internal.worlds.applyStateUpdate, {
-					worldId: character.worldId,
-					promptId,
-					update: {
-						characters: filteredUpdate.characters,
-						locations: filteredUpdate.locations,
-						world: filteredUpdate.world ?? { time: world.time! },
-					},
-				})
+			const sortedMutations = [...mutationList.mutations].sort(
+				(a, b) => getRank(a) - getRank(b),
+			)
+
+			for (const mutation of sortedMutations) {
+				console.debug("Applying mutation", mutation)
+				try {
+					await ctx.runMutation(internal.worlds.applyWorldMutation, {
+						promptId,
+						mutation,
+						worldId: character.worldId,
+					})
+				} catch (error) {
+					console.error("Failed to apply mutation", {
+						error,
+						mutation,
+					})
+				}
 			}
 		} catch (error) {
-			// since this whole process has eighteen trillion potential points of failure,
-			// we still want to move on if the state update failed
-			// maybe we make that retryable later, I dunno
 			console.error("Failed to update world state:", error)
 		}
 

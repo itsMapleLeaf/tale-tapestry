@@ -72,6 +72,10 @@
 	:focus-visible {
 		@apply outline-primary-500 outline-2 outline-offset-1;
 	}
+
+	strong {
+		font-weight: 500;
+	}
 }
 
 @utility container {

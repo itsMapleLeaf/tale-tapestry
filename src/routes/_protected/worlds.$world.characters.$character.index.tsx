@@ -93,9 +93,9 @@ function PromptList({
 					<p className="whitespace-pre-line opacity-40 transition-opacity hover:opacity-70">
 						{prompt.content}
 					</p>
-					{prompt.stateUpdate && (
+					{prompt.mutations && prompt.mutations.length > 0 && (
 						<div className="opacity-40 transition-opacity hover:opacity-70">
-							<StateUpdateSummary stateUpdate={prompt.stateUpdate} />
+							<StateUpdateSummary mutations={prompt.mutations} />
 						</div>
 					)}
 				</Fragment>
@@ -103,9 +103,11 @@ function PromptList({
 			<div className="vstack">
 				<p className="text-lg whitespace-pre-line">{current.content}</p>
 				{current.status === "pending" && <LoadingIcon />}
-				{current.stateUpdate && current.status !== "pending" && (
-					<StateUpdateSummary stateUpdate={current.stateUpdate} />
-				)}
+				{current.mutations &&
+					current.mutations.length > 0 &&
+					current.status !== "pending" && (
+						<StateUpdateSummary mutations={current.mutations} />
+					)}
 			</div>
 			{current.status === "pending" ? null : (
 				<InputForm
@@ -120,47 +122,81 @@ function PromptList({
 }
 
 function StateUpdateSummary({
-	stateUpdate,
+	mutations,
 }: {
-	stateUpdate: NonNullable<Doc<"prompts">["stateUpdate"]>
+	mutations: NonNullable<Doc<"prompts">["mutations"]>
 }) {
-	const items = [
-		...stateUpdate.characters.map((character) => ({
-			name: character.name,
-			properties: character.properties.map(({ key, value }) => ({
-				key,
-				value,
-			})),
-		})),
-		...stateUpdate.locations.map((location) => ({
-			name: location.name,
-			properties: location.properties.map(({ key, value }) => ({
-				key,
-				value,
-			})),
-		})),
-		{
-			name: "World",
-			properties: [{ key: "time", value: stateUpdate.world.time }],
-		},
-	].filter((item) => item.properties.length > 0)
-
-	if (items.length === 0) return null
+	if (!mutations.length) return null
 
 	return (
-		<div className="vstack gap-4 text-sm">
-			{items.map((item) => (
-				<div key={item.name} className="vstack gap-1">
-					<span className="font-medium">{item.name}</span>
-					<ul className="vstack text-primary-300 list-disc gap-0.5 pl-4">
-						{item.properties.map(({ key, value }) => (
-							<li key={key}>
-								<span className="font-medium">{key}</span>: {value}
-							</li>
-						))}
-					</ul>
-				</div>
-			))}
-		</div>
+		<ul className="vstack text-sm">
+			{mutations.map((mutation, i) => {
+				let description: React.ReactNode
+				switch (mutation.type) {
+					case "setWorldTime":
+						description = (
+							<>
+								Time in <strong>{mutation.worldName}</strong> changed to{" "}
+								<strong>{mutation.time}</strong>
+							</>
+						)
+						break
+					case "setCharacterLocation":
+						description = (
+							<>
+								<strong>{mutation.characterName}</strong> moved to{" "}
+								<strong>{mutation.locationName}</strong>
+							</>
+						)
+						break
+					case "setCharacterPronouns":
+						description = (
+							<>
+								<strong>{mutation.characterName}</strong>&apos;s pronouns
+								changed to <strong>{mutation.pronouns}</strong>
+							</>
+						)
+						break
+					case "createLocation":
+						description = (
+							<>
+								Created new location <strong>{mutation.locationName}</strong>
+							</>
+						)
+						break
+					case "createCharacter":
+						description = (
+							<>
+								Created new character <strong>{mutation.characterName}</strong>{" "}
+								at <strong>{mutation.locationName}</strong>
+							</>
+						)
+						break
+					case "setProperty":
+						description = (
+							<>
+								Set <strong>{mutation.entity.name}</strong>&apos;s{" "}
+								<strong>{mutation.key}</strong> to{" "}
+								<strong>{mutation.value}</strong>
+							</>
+						)
+						break
+					case "removeProperty":
+						description = (
+							<>
+								Removed <strong>{mutation.key}</strong> from{" "}
+								<strong>{mutation.entity.name}</strong>
+							</>
+						)
+						break
+				}
+
+				return (
+					<li key={i} className="text-primary-300 list-inside list-disc pl-1.5">
+						{description}
+					</li>
+				)
+			})}
+		</ul>
 	)
 }
