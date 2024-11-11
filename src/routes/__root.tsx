@@ -4,7 +4,6 @@ import {
 	Outlet,
 	ScrollRestoration,
 } from "@tanstack/react-router"
-import { Meta } from "@tanstack/start"
 import { Suspense } from "react"
 import { LoadingCover } from "../components/LoadingCover.tsx"
 
@@ -32,7 +31,6 @@ function RootComponent() {
 			<Suspense fallback={<LoadingCover />}>
 				<Outlet />
 			</Suspense>
-			<Meta />
 			<ScrollRestoration />
 		</>
 	)

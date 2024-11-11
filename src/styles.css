@@ -78,6 +78,14 @@
 	@apply mx-auto w-full max-w-[1000px] px-4;
 }
 
+@utility vstack {
+	@apply flex flex-col items-start gap-2;
+}
+
+@utility hstack {
+	@apply flex flex-row gap-2;
+}
+
 @utility panel {
 	@apply bg-primary-900/50 border-primary-800 block rounded border;
 }

@@ -16,9 +16,14 @@ function Home() {
 	const worlds = useSuspenseQuery(convexQuery(api.worlds.list, {}))
 	return (
 		<PageLayout title="Choose a world">
-			<div className="flex flex-col gap-2">
+			<div className="vstack">
 				{worlds.data.map((world) => (
-					<Link key={world._id} to="/worlds/$id" params={{ id: world._id }}>
+					<Link
+						key={world._id}
+						to="/worlds/$world"
+						params={{ world: world._id }}
+						className="w-full"
+					>
 						<ListCard
 							className="panel-interactive"
 							title={world.name}

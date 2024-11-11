@@ -13,10 +13,10 @@ export const Route = createFileRoute("/_protected/settings")({
 })
 
 function Settings() {
-	const user = useSuspenseQuery(convexQuery(api.auth.user, {}))
+	const user = useSuspenseQuery(convexQuery(api.users.me, {}))
 
 	const update = useMutation({
-		mutationFn: useConvexMutation(api.auth.update),
+		mutationFn: useConvexMutation(api.users.update),
 	})
 	const updateDebounced = useDebouncedCallback(update.mutate, 500)
 

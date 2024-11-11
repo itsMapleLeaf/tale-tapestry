@@ -17,7 +17,7 @@ export function ListCard({
 	return (
 		<div
 			className={twMerge(
-				"panel flex items-center gap-2 px-2.5 py-2",
+				"panel flex w-full items-center gap-2 px-2.5 py-2",
 				className,
 			)}
 			{...props}

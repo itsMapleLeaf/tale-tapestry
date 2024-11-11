@@ -1,9 +1,16 @@
+import { getOrThrow } from "convex-helpers/server/relationships"
 import { ConvexError, v } from "convex/values"
 import { z } from "zod"
-import { action, internalMutation, mutation, query } from "./_generated/server"
+import { Id } from "./_generated/dataModel"
+import {
+	QueryCtx,
+	action,
+	internalMutation,
+	mutation,
+	query,
+} from "./_generated/server"
 import { createParsedCompletion } from "./ai.ts"
-import { ensureAuthUser, ensureAuthUserId } from "./auth.ts"
-import { getPlayer } from "./players.ts"
+import { ensureAuthUser, ensureAuthUserId } from "./users.ts"
 
 export const create = mutation({
 	args: {
@@ -26,33 +33,14 @@ export const list = query({
 })
 
 export const get = query({
-	args: { id: v.id("worlds") },
-	handler: async (ctx, args) => {
+	args: { worldId: v.id("worlds") },
+	handler: async (ctx, { worldId }) => {
 		const userId = await ensureAuthUserId(ctx)
-		const world = await ctx.db.get(args.id)
+		const world = await ctx.db.get(worldId)
 		if (!world || world.creatorId !== userId) {
 			return null
 		}
-
-		const player = await ctx.db
-			.query("players")
-			.withIndex("userId_worldId", (q) =>
-				q.eq("userId", userId).eq("worldId", world._id),
-			)
-			.unique()
-
-		const character =
-			player?.currentCharacterId &&
-			(await ctx.db.get(player.currentCharacterId))
-
-		const location = character && (await ctx.db.get(character.locationId))
-
-		return {
-			world,
-			character,
-			location,
-			prompt: player?.currentPrompt,
-		}
+		return world
 	},
 })
 
@@ -118,7 +106,7 @@ export const onboard = mutation({
 		worldId: v.id("worlds"),
 	},
 	async handler(ctx, { worldId, ...args }) {
-		const userId = await ensureAuthUserId(ctx)
+		await ensureViewerWorldAccess(ctx, worldId)
 
 		const locationId = await ctx.db.insert("locations", {
 			name: args.location,
@@ -134,18 +122,17 @@ export const onboard = mutation({
 			locationId,
 		})
 
-		const player = await getPlayer(ctx, userId, worldId)
-
-		if (!player) {
-			await ctx.db.insert("players", {
-				userId,
-				worldId,
-				currentCharacterId: characterId,
-			})
-		} else {
-			await ctx.db.patch(player._id, {
-				currentCharacterId: characterId,
-			})
-		}
+		return { characterId }
 	},
 })
+
+export async function ensureViewerWorldAccess(
+	ctx: QueryCtx,
+	worldId: Id<"worlds">,
+) {
+	const user = await ensureAuthUser(ctx)
+	const world = await getOrThrow(ctx, worldId)
+	if (world.creatorId !== user._id) {
+		throw new ConvexError("Unauthorized")
+	}
+}

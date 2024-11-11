@@ -42,7 +42,7 @@ function NewWorldRoute() {
 			if (!name) return
 
 			const worldId = await createWorld({ name: name.trim() })
-			navigate({ to: "/worlds/$id", params: { id: worldId } })
+			navigate({ to: "/worlds/$world", params: { world: worldId } })
 		} catch (error) {
 			console.error(error)
 		}

@@ -15,7 +15,8 @@ import { Route as ProtectedImport } from './routes/_protected'
 import { Route as ProtectedIndexImport } from './routes/_protected/index'
 import { Route as ProtectedSettingsImport } from './routes/_protected/settings'
 import { Route as ProtectedWorldsNewImport } from './routes/_protected/worlds.new'
-import { Route as ProtectedWorldsIdImport } from './routes/_protected/worlds.$id'
+import { Route as ProtectedWorldsWorldIndexImport } from './routes/_protected/worlds.$world.index'
+import { Route as ProtectedWorldsWorldCharactersCharacterIndexImport } from './routes/_protected/worlds.$world.characters.$character.index'
 
 // Create/Update Routes
 
@@ -42,11 +43,18 @@ const ProtectedWorldsNewRoute = ProtectedWorldsNewImport.update({
   getParentRoute: () => ProtectedRoute,
 } as any)
 
-const ProtectedWorldsIdRoute = ProtectedWorldsIdImport.update({
-  id: '/worlds/$id',
-  path: '/worlds/$id',
+const ProtectedWorldsWorldIndexRoute = ProtectedWorldsWorldIndexImport.update({
+  id: '/worlds/$world/',
+  path: '/worlds/$world/',
   getParentRoute: () => ProtectedRoute,
 } as any)
+
+const ProtectedWorldsWorldCharactersCharacterIndexRoute =
+  ProtectedWorldsWorldCharactersCharacterIndexImport.update({
+    id: '/worlds/$world/characters/$character/',
+    path: '/worlds/$world/characters/$character/',
+    getParentRoute: () => ProtectedRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -73,18 +81,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedIndexImport
       parentRoute: typeof ProtectedImport
     }
-    '/_protected/worlds/$id': {
-      id: '/_protected/worlds/$id'
-      path: '/worlds/$id'
-      fullPath: '/worlds/$id'
-      preLoaderRoute: typeof ProtectedWorldsIdImport
-      parentRoute: typeof ProtectedImport
-    }
     '/_protected/worlds/new': {
       id: '/_protected/worlds/new'
       path: '/worlds/new'
       fullPath: '/worlds/new'
       preLoaderRoute: typeof ProtectedWorldsNewImport
+      parentRoute: typeof ProtectedImport
+    }
+    '/_protected/worlds/$world/': {
+      id: '/_protected/worlds/$world/'
+      path: '/worlds/$world'
+      fullPath: '/worlds/$world'
+      preLoaderRoute: typeof ProtectedWorldsWorldIndexImport
+      parentRoute: typeof ProtectedImport
+    }
+    '/_protected/worlds/$world/characters/$character/': {
+      id: '/_protected/worlds/$world/characters/$character/'
+      path: '/worlds/$world/characters/$character'
+      fullPath: '/worlds/$world/characters/$character'
+      preLoaderRoute: typeof ProtectedWorldsWorldCharactersCharacterIndexImport
       parentRoute: typeof ProtectedImport
     }
   }
@@ -95,15 +110,18 @@ declare module '@tanstack/react-router' {
 interface ProtectedRouteChildren {
   ProtectedSettingsRoute: typeof ProtectedSettingsRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
-  ProtectedWorldsIdRoute: typeof ProtectedWorldsIdRoute
   ProtectedWorldsNewRoute: typeof ProtectedWorldsNewRoute
+  ProtectedWorldsWorldIndexRoute: typeof ProtectedWorldsWorldIndexRoute
+  ProtectedWorldsWorldCharactersCharacterIndexRoute: typeof ProtectedWorldsWorldCharactersCharacterIndexRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedSettingsRoute: ProtectedSettingsRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,
-  ProtectedWorldsIdRoute: ProtectedWorldsIdRoute,
   ProtectedWorldsNewRoute: ProtectedWorldsNewRoute,
+  ProtectedWorldsWorldIndexRoute: ProtectedWorldsWorldIndexRoute,
+  ProtectedWorldsWorldCharactersCharacterIndexRoute:
+    ProtectedWorldsWorldCharactersCharacterIndexRoute,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
@@ -114,15 +132,17 @@ export interface FileRoutesByFullPath {
   '': typeof ProtectedRouteWithChildren
   '/settings': typeof ProtectedSettingsRoute
   '/': typeof ProtectedIndexRoute
-  '/worlds/$id': typeof ProtectedWorldsIdRoute
   '/worlds/new': typeof ProtectedWorldsNewRoute
+  '/worlds/$world': typeof ProtectedWorldsWorldIndexRoute
+  '/worlds/$world/characters/$character': typeof ProtectedWorldsWorldCharactersCharacterIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/settings': typeof ProtectedSettingsRoute
   '/': typeof ProtectedIndexRoute
-  '/worlds/$id': typeof ProtectedWorldsIdRoute
   '/worlds/new': typeof ProtectedWorldsNewRoute
+  '/worlds/$world': typeof ProtectedWorldsWorldIndexRoute
+  '/worlds/$world/characters/$character': typeof ProtectedWorldsWorldCharactersCharacterIndexRoute
 }
 
 export interface FileRoutesById {
@@ -130,22 +150,35 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/_protected/settings': typeof ProtectedSettingsRoute
   '/_protected/': typeof ProtectedIndexRoute
-  '/_protected/worlds/$id': typeof ProtectedWorldsIdRoute
   '/_protected/worlds/new': typeof ProtectedWorldsNewRoute
+  '/_protected/worlds/$world/': typeof ProtectedWorldsWorldIndexRoute
+  '/_protected/worlds/$world/characters/$character/': typeof ProtectedWorldsWorldCharactersCharacterIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '' | '/settings' | '/' | '/worlds/$id' | '/worlds/new'
+  fullPaths:
+    | ''
+    | '/settings'
+    | '/'
+    | '/worlds/new'
+    | '/worlds/$world'
+    | '/worlds/$world/characters/$character'
   fileRoutesByTo: FileRoutesByTo
-  to: '/settings' | '/' | '/worlds/$id' | '/worlds/new'
+  to:
+    | '/settings'
+    | '/'
+    | '/worlds/new'
+    | '/worlds/$world'
+    | '/worlds/$world/characters/$character'
   id:
     | '__root__'
     | '/_protected'
     | '/_protected/settings'
     | '/_protected/'
-    | '/_protected/worlds/$id'
     | '/_protected/worlds/new'
+    | '/_protected/worlds/$world/'
+    | '/_protected/worlds/$world/characters/$character/'
   fileRoutesById: FileRoutesById
 }
 
@@ -175,8 +208,9 @@ export const routeTree = rootRoute
       "children": [
         "/_protected/settings",
         "/_protected/",
-        "/_protected/worlds/$id",
-        "/_protected/worlds/new"
+        "/_protected/worlds/new",
+        "/_protected/worlds/$world/",
+        "/_protected/worlds/$world/characters/$character/"
       ]
     },
     "/_protected/settings": {
@@ -187,12 +221,16 @@ export const routeTree = rootRoute
       "filePath": "_protected/index.tsx",
       "parent": "/_protected"
     },
-    "/_protected/worlds/$id": {
-      "filePath": "_protected/worlds.$id.tsx",
-      "parent": "/_protected"
-    },
     "/_protected/worlds/new": {
       "filePath": "_protected/worlds.new.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/worlds/$world/": {
+      "filePath": "_protected/worlds.$world.index.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/worlds/$world/characters/$character/": {
+      "filePath": "_protected/worlds.$world.characters.$character.index.tsx",
       "parent": "/_protected"
     }
   }

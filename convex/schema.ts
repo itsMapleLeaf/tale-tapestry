@@ -19,14 +19,6 @@ export default defineSchema({
 	players: defineTable({
 		userId: v.id("users"),
 		worldId: v.id("worlds"),
-		currentCharacterId: v.optional(v.union(v.id("characters"), v.null())),
-		currentPrompt: v.optional(
-			v.object({
-				pending: v.boolean(),
-				message: v.string(),
-				actions: v.array(v.string()),
-			}),
-		),
 	})
 		.index("worldId", ["worldId"])
 		.index("userId_worldId", ["userId", "worldId"]),
@@ -51,5 +43,10 @@ export default defineSchema({
 		content: v.string(),
 		actions: v.array(v.object({ name: v.string() })),
 		characterId: v.id("characters"),
+		status: v.union(
+			v.literal("pending"),
+			v.literal("success"),
+			v.literal("failure"),
+		),
 	}).index("characterId", ["characterId"]),
 })

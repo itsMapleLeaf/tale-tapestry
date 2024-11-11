@@ -1,131 +1,112 @@
+import { getOrThrow } from "convex-helpers/server/relationships"
+import { partial } from "convex-helpers/validators"
 import { ConvexError, v } from "convex/values"
 import OpenAI from "openai"
 import { internal } from "./_generated/api"
-import { internalAction, mutation } from "./_generated/server"
-import { ensureAuthUser } from "./auth.ts"
-import { getPlayer } from "./players.ts"
+import { Doc, Id } from "./_generated/dataModel"
+import {
+	internalAction,
+	internalMutation,
+	mutation,
+	query,
+} from "./_generated/server"
+import schema from "./schema.ts"
+import { ensureApiKey, ensureAuthUser } from "./users.ts"
+import { ensureViewerWorldAccess } from "./worlds.ts"
 
 export const create = mutation({
 	args: {
-		worldId: v.id("worlds"),
+		characterId: v.id("characters"),
 	},
-	handler: async (ctx, { worldId }) => {
+	handler: async (ctx, { characterId }) => {
 		const user = await ensureAuthUser(ctx)
-		if (!user.openRouterApiKey) {
-			throw new ConvexError({
-				message: "No OpenAPI auth key set",
-				user: { id: user._id, name: user.name },
-			})
+		const apiKey = await ensureApiKey(user)
+		const character = await getOrThrow(ctx, characterId)
+		const world = await getOrThrow(ctx, character.worldId)
+		const location = await getOrThrow(ctx, character.locationId)
+
+		const latestPrompt = await ctx.db
+			.query("prompts")
+			.withIndex("characterId", (q) => q.eq("characterId", characterId))
+			.order("desc")
+			.first()
+
+		if (latestPrompt?.status === "pending") {
+			throw new ConvexError("Current prompt is still pending")
 		}
 
-		const world = await ctx.db.get(worldId)
-		if (!world) {
-			throw new ConvexError({
-				message: "World not found",
-				worldId,
-			})
-		}
-
-		const player = await getPlayer(ctx, user._id, worldId)
-		if (!player) {
-			throw new ConvexError({
-				message: "Player not found",
-				worldId,
-				user,
-			})
-		}
-
-		if (!player.currentCharacterId) {
-			throw new ConvexError({
-				message: "Character not set",
-				player,
-			})
-		}
-
-		const character = await ctx.db.get(player.currentCharacterId)
-		if (!character) {
-			throw new ConvexError({
-				message: "Character not found",
-				characterId: player.currentCharacterId,
-			})
-		}
-
-		const location = await ctx.db.get(character.locationId)
-		if (!location) {
-			throw new ConvexError({
-				message: "Location not found",
-				locationId: character.locationId,
-			})
-		}
-
-		const currentPrompt = player?.currentPrompt ?? {
-			message: "",
-			actions: [],
-			pending: false,
-		}
-
-		if (currentPrompt.pending) {
-			return
-		}
-
-		let playerId
-		if (!player) {
-			playerId = await ctx.db.insert("players", {
-				userId: user._id,
-				worldId,
-				currentPrompt: {
-					message: "",
-					actions: [],
-					pending: true,
-				},
+		let promptId
+		if (latestPrompt?.status === "failure") {
+			promptId = latestPrompt._id
+			await ctx.db.patch(latestPrompt._id, {
+				status: "pending",
 			})
 		} else {
-			await ctx.db.patch(player._id, {
-				currentPrompt: {
-					message: "",
-					actions: [],
-					pending: true,
-				},
+			promptId = await ctx.db.insert("prompts", {
+				characterId: character._id,
+				content: "",
+				actions: [],
+				status: "pending",
 			})
-			playerId = player._id
 		}
 
 		await ctx.scheduler.runAfter(0, internal.prompts.populate, {
-			apiKey: user.openRouterApiKey,
-			playerId,
-			world: { name: world.name },
-			character: {
-				name: character.name,
-				pronouns: character.pronouns,
-				properties: character.properties,
-			},
-			location: {
-				name: location.name,
-				properties: location.properties,
-			},
+			promptId,
+			apiKey,
+			world,
+			character,
+			location,
 		})
 	},
 })
 
-export const populate = internalAction({
+export const list = query({
 	args: {
-		apiKey: v.string(),
-		playerId: v.id("players"),
-		world: v.object({
-			name: v.string(),
-		}),
-		location: v.object({
-			name: v.string(),
-			properties: v.record(v.string(), v.string()),
-		}),
-		character: v.object({
-			name: v.string(),
-			pronouns: v.string(),
-			properties: v.record(v.string(), v.string()),
-		}),
+		characterId: v.id("characters"),
 	},
-	handler: async (ctx, { apiKey, playerId, world, location, character }) => {
-		let message = ""
+	handler: async (ctx, { characterId }) => {
+		try {
+			const character = await getOrThrow(ctx, characterId)
+			await ensureViewerWorldAccess(ctx, character.worldId)
+			return await ctx.db
+				.query("prompts")
+				.withIndex("characterId", (q) => q.eq("characterId", characterId))
+				.collect()
+		} catch (error) {
+			console.warn(error)
+			return []
+		}
+	},
+})
+
+export const update = internalMutation({
+	args: {
+		...partial(schema.tables.prompts.validator.fields),
+		promptId: v.id("prompts"),
+	},
+	handler: async (ctx, { promptId, ...args }) => {
+		await ctx.db.patch(promptId, args)
+	},
+})
+
+export const populate = internalAction({
+	handler: async (
+		ctx,
+		{
+			promptId,
+			apiKey,
+			character,
+			world,
+			location,
+		}: {
+			promptId: Id<"prompts">
+			apiKey: string
+			world: Doc<"worlds">
+			location: Doc<"locations">
+			character: Doc<"characters">
+		},
+	) => {
+		let response = ""
 		try {
 			const openai = new OpenAI({
 				baseURL: "https://openrouter.ai/api/v1",
@@ -133,7 +114,9 @@ export const populate = internalAction({
 			})
 
 			const completion = await openai.chat.completions.create({
-				model: "nousresearch/hermes-3-llama-3.1-70b",
+				model: "microsoft/wizardlm-2-7b",
+				// model: "nousresearch/hermes-3-llama-3.1-405b",
+				// model: "nousresearch/hermes-3-llama-3.1-70b",
 				messages: [
 					{
 						role: "system",
@@ -163,25 +146,22 @@ export const populate = internalAction({
 			for await (const chunk of completion) {
 				const content = chunk.choices[0]?.delta.content
 				if (content) {
-					message += content
-					await ctx.runMutation(internal.players.update, {
-						playerId,
-						currentPrompt: {
-							message,
-							actions: [],
-							pending: true,
-						},
+					response += content
+					await ctx.runMutation(internal.prompts.update, {
+						promptId,
+						content: response,
 					})
 				}
 			}
-		} finally {
-			await ctx.runMutation(internal.players.update, {
-				playerId,
-				currentPrompt: {
-					message,
-					actions: [],
-					pending: false,
-				},
+			await ctx.runMutation(internal.prompts.update, {
+				promptId,
+				status: "success",
+			})
+		} catch (error) {
+			console.error(error)
+			await ctx.runMutation(internal.prompts.update, {
+				promptId,
+				status: "failure",
 			})
 		}
 	},

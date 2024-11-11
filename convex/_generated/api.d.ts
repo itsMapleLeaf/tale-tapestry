@@ -15,9 +15,12 @@ import type {
 } from "convex/server";
 import type * as ai from "../ai.js";
 import type * as auth from "../auth.js";
+import type * as characters from "../characters.js";
 import type * as http from "../http.js";
+import type * as locations from "../locations.js";
 import type * as players from "../players.js";
 import type * as prompts from "../prompts.js";
+import type * as users from "../users.js";
 import type * as worlds from "../worlds.js";
 
 /**
@@ -31,9 +34,12 @@ import type * as worlds from "../worlds.js";
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   auth: typeof auth;
+  characters: typeof characters;
   http: typeof http;
+  locations: typeof locations;
   players: typeof players;
   prompts: typeof prompts;
+  users: typeof users;
   worlds: typeof worlds;
 }>;
 export declare const api: FilterApi<

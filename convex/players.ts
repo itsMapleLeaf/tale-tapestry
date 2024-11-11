@@ -1,23 +1,6 @@
-import { v } from "convex/values"
+import { ConvexError } from "convex/values"
 import { Id } from "./_generated/dataModel"
-import { QueryCtx, internalMutation } from "./_generated/server"
-
-export const update = internalMutation({
-	args: {
-		playerId: v.id("players"),
-		currentCharacterId: v.optional(v.union(v.id("characters"), v.null())),
-		currentPrompt: v.optional(
-			v.object({
-				pending: v.boolean(),
-				message: v.string(),
-				actions: v.array(v.string()),
-			}),
-		),
-	},
-	handler: async (ctx, { playerId, ...args }) => {
-		await ctx.db.patch(playerId, args)
-	},
-})
+import { QueryCtx } from "./_generated/server"
 
 export async function getPlayer(
 	ctx: QueryCtx,
@@ -30,4 +13,16 @@ export async function getPlayer(
 			q.eq("userId", userId).eq("worldId", worldId),
 		)
 		.unique()
+}
+
+export async function ensurePlayer(
+	ctx: QueryCtx,
+	userId: Id<"users">,
+	worldId: Id<"worlds">,
+) {
+	const player = await getPlayer(ctx, userId, worldId)
+	if (!player) {
+		throw new ConvexError({ message: "Player not found", userId, worldId })
+	}
+	return player
 }

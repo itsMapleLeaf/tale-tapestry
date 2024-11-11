@@ -7,7 +7,7 @@ import { api } from "../../convex/_generated/api.js"
 import { Menu, MenuButton, MenuItem, MenuPanel } from "./Menu.tsx"
 
 export function UserButton() {
-	const user = useQuery(convexQuery(api.auth.user, {})).data
+	const user = useQuery(convexQuery(api.users.me, {})).data
 	const auth = useConvexAuth()
 	if (auth.isLoading) return null
 	if (!user) return null

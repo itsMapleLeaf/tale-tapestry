@@ -24,6 +24,7 @@ export function Button({
 	const status = useFormStatus()
 
 	return cloneElement(render, {
+		...props,
 		className: twMerge("button", props.className),
 		children: (
 			<>
@@ -38,6 +39,5 @@ export function Button({
 				{children}
 			</>
 		),
-		...props,
 	})
 }
