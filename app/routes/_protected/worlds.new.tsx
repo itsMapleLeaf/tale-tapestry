@@ -5,12 +5,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { LucideArrowRight, LucideRefreshCcw } from "lucide-react"
 import { useState } from "react"
 import { api } from "../../../convex/_generated/api"
+import { unique } from "../../../lib/iterable.ts"
 import { Button } from "../../components/Button.tsx"
 import { InputWithButton } from "../../components/InputWithButton.tsx"
 import { LoadingIcon } from "../../components/LoadingIcon.tsx"
 import { PageLayout } from "../../components/PageLayout.tsx"
 import { PageSection } from "../../components/PageSection.tsx"
-import { unique } from "../../lib/iterable.ts"
 
 export const Route = createFileRoute("/_protected/worlds/new")({
 	component: NewWorldRoute,

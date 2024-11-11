@@ -4,7 +4,14 @@ import viteReact from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
 export default defineConfig({
-	plugins: [TanStackRouterVite(), viteReact(), tailwindcss()],
+	plugins: [
+		TanStackRouterVite({
+			routesDirectory: "app/routes",
+			generatedRouteTree: "app/routeTree.gen.ts",
+		}),
+		viteReact(),
+		tailwindcss(),
+	],
 	server: {
 		watch: {
 			usePolling: true,

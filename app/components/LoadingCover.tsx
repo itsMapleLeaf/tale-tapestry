@@ -1,4 +1,4 @@
-import { LoadingIcon } from "../components/LoadingIcon.tsx"
+import { LoadingIcon } from "./LoadingIcon.tsx"
 
 export function LoadingCover() {
 	return (

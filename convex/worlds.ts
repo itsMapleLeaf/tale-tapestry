@@ -2,7 +2,7 @@ import { getOrThrow } from "convex-helpers/server/relationships"
 import { partial } from "convex-helpers/validators"
 import { ConvexError, v } from "convex/values"
 import { z } from "zod"
-import { omit } from "../src/lib/object.ts"
+import { omit } from "../lib/object.ts"
 import { api, internal } from "./_generated/api"
 import { Id } from "./_generated/dataModel"
 import {
