@@ -90,7 +90,7 @@ function PromptList({
 		<div className="vstack gap-4">
 			{previous.toReversed().map((prompt) => (
 				<Fragment key={prompt._id}>
-					<p className="whitespace-pre-line opacity-75 transition-opacity hover:opacity-100">
+					<p className="whitespace-pre-line opacity-40 transition-opacity hover:opacity-70">
 						{prompt.content}
 					</p>
 				</Fragment>
@@ -99,10 +99,12 @@ function PromptList({
 				<p className="whitespace-pre-line">{current.content}</p>
 				{current.status === "pending" && <LoadingIcon />}
 			</div>
-			<InputForm
-				placeholder="Do something..."
-				action={() => createPrompt.mutate({ characterId })}
-			/>
+			{current.status === "pending" ? null : (
+				<InputForm
+					placeholder="Do something..."
+					action={() => createPrompt.mutate({ characterId })}
+				/>
+			)}
 		</div>
 	)
 }

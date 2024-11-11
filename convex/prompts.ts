@@ -114,30 +114,32 @@ export const populate = internalAction({
 			})
 
 			const completion = await openai.chat.completions.create({
-				model: "microsoft/wizardlm-2-7b",
+				// model: "microsoft/wizardlm-2-8x22b",
+				// model: "microsoft/wizardlm-2-7b",
 				// model: "nousresearch/hermes-3-llama-3.1-405b",
-				// model: "nousresearch/hermes-3-llama-3.1-70b",
+				model: "nousresearch/hermes-3-llama-3.1-70b",
 				messages: [
 					{
 						role: "system",
-						content: [
-							`The user is playing in an evolving world simulation.`,
-							`They make actions in this world by responding to action prompts created by you.`,
-							``,
-							`Here are the player's details and current state:`,
-							JSON.stringify({ world, character, location }, null, "\t"),
-							``,
-							`First, describe the scenario with lots of flavorful details.`,
-							``,
-							`Then, ask what they want to do next, and give some bullet point suggestions for things they could do.`,
-							``,
-							`Finally: the world needs to update. With your response, include suggestions for...`,
-							`- New characters`,
-							`- New locations`,
-							`- New or updated properties for each`,
-							``,
-							`Where properties can be anything. For characters, it could be their appearance, their mood, or their current goals. For locations, it can be how hot or cold they are, how crowded it is, or if there's something else going on.`,
-						].join("\n\n"),
+						content: `The user is playing in an evolving world simulation. They make actions in this world by responding to prompts created by you.
+
+This takes place in a world called ${world.name}. It is currently ${world.time}.
+
+Their character's name is ${character.name}. Their pronouns are ${character.pronouns}. Here are some properties which describe them:
+\`\`\`json
+${JSON.stringify(character.properties, null, 2)}
+\`\`\`
+
+The player is currently in ${location.name}. These properties describe the location:
+\`\`\`json
+${JSON.stringify(location.properties, null, 2)}
+\`\`\`
+
+Respond with a few short paragraphs no longer than 100 words. Use lots of line breaks for readability.`,
+					},
+					{
+						role: "user",
+						content: `What's currently around me?`,
 					},
 				],
 				stream: true,

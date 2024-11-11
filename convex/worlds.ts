@@ -1,7 +1,9 @@
 import { getOrThrow } from "convex-helpers/server/relationships"
+import { partial } from "convex-helpers/validators"
 import { ConvexError, v } from "convex/values"
 import { z } from "zod"
-import { api } from "./_generated/api"
+import { omit } from "../src/lib/object.ts"
+import { api, internal } from "./_generated/api"
 import { Id } from "./_generated/dataModel"
 import {
 	QueryCtx,
@@ -11,15 +13,19 @@ import {
 	query,
 } from "./_generated/server"
 import { createParsedCompletion } from "./ai.ts"
+import schema from "./schema.ts"
 import { ensureApiKey, ensureAuthUser, ensureAuthUserId } from "./users.ts"
 
 export const create = mutation({
 	args: {
-		name: v.string(),
+		...omit(schema.tables.worlds.validator.fields, ["creatorId"]),
 	},
 	handler: async (ctx, args) => {
 		const userId = await ensureAuthUserId(ctx)
-		return await ctx.db.insert("worlds", { ...args, creatorId: userId })
+		return await ctx.db.insert("worlds", {
+			...args,
+			creatorId: userId,
+		})
 	},
 })
 
@@ -47,11 +53,11 @@ export const get = query({
 
 export const update = internalMutation({
 	args: {
-		id: v.id("worlds"),
-		name: v.optional(v.string()),
+		...partial(schema.tables.worlds.validator.fields),
+		worldId: v.id("worlds"),
 	},
-	handler: async (ctx, { id, ...args }) => {
-		await ctx.db.patch(id, args)
+	handler: async (ctx, { worldId, ...args }) => {
+		await ctx.db.patch(worldId, args)
 	},
 })
 
@@ -150,7 +156,7 @@ Return the following in a JSON object:
 
 		const locationId = await ctx.runMutation(api.locations.create, {
 			name: completion.location.name,
-			time: completion.location.time,
+
 			properties: {},
 			worldId,
 		})
@@ -163,6 +169,11 @@ Return the following in a JSON object:
 			),
 			worldId,
 			locationId,
+		})
+
+		await ctx.runMutation(internal.worlds.update, {
+			worldId,
+			time: completion.location.time,
 		})
 
 		return { characterId }
