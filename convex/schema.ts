@@ -1,74 +1,7 @@
 import { authTables } from "@convex-dev/auth/server"
 import { defineSchema, defineTable } from "convex/server"
 import { v } from "convex/values"
-
-export const worldMutationValidator = v.union(
-	v.object({
-		type: v.literal("setWorldTime"),
-		worldId: v.id("worlds"),
-		worldName: v.string(),
-		time: v.string(),
-	}),
-	v.object({
-		type: v.literal("setProperty"),
-		entity: v.union(
-			v.object({
-				type: v.literal("character"),
-				id: v.id("characters"),
-				name: v.string(),
-			}),
-			v.object({
-				type: v.literal("location"),
-				id: v.id("locations"),
-				name: v.string(),
-			}),
-		),
-		key: v.string(),
-		value: v.string(),
-	}),
-	v.object({
-		type: v.literal("removeProperty"),
-		entity: v.union(
-			v.object({
-				type: v.literal("character"),
-				id: v.id("characters"),
-				name: v.string(),
-			}),
-			v.object({
-				type: v.literal("location"),
-				id: v.id("locations"),
-				name: v.string(),
-			}),
-		),
-		key: v.string(),
-	}),
-	v.object({
-		type: v.literal("setCharacterLocation"),
-		characterId: v.id("characters"),
-		characterName: v.string(),
-		locationId: v.id("locations"),
-		locationName: v.string(),
-	}),
-	v.object({
-		type: v.literal("setCharacterPronouns"),
-		characterId: v.id("characters"),
-		characterName: v.string(),
-		pronouns: v.string(),
-	}),
-	v.object({
-		type: v.literal("createCharacter"),
-		characterId: v.id("characters"),
-		characterName: v.string(),
-		pronouns: v.string(),
-		locationId: v.id("locations"),
-		locationName: v.string(),
-	}),
-	v.object({
-		type: v.literal("createLocation"),
-		locationId: v.id("locations"),
-		locationName: v.string(),
-	}),
-)
+import { worldMutationRecordValidator } from "./mutations"
 
 export default defineSchema({
 	...authTables,
@@ -126,6 +59,6 @@ export default defineSchema({
 			v.literal("success"),
 			v.literal("failure"),
 		),
-		mutations: v.optional(v.array(worldMutationValidator)),
+		mutations: v.optional(v.array(worldMutationRecordValidator)),
 	}).index("characterId", ["characterId"]),
 })

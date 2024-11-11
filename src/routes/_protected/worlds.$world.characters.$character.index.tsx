@@ -71,7 +71,7 @@ function PromptList({
 	characterId: Id<"characters">
 }) {
 	const createPrompt = useMutation({
-		mutationFn: useConvexAction(api.characters.act),
+		mutationFn: useConvexAction(api.actions.create),
 	})
 
 	const [current, ...previous] = prompts.toReversed()
