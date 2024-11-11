@@ -123,14 +123,14 @@ export const onboard = mutation({
 		const locationId = await ctx.db.insert("locations", {
 			name: args.location,
 			properties: {},
-			worldId: worldId,
+			worldId,
 		})
 
 		const characterId = await ctx.db.insert("characters", {
 			name: args.name,
 			pronouns: args.pronouns,
 			properties: {},
-			worldId: worldId,
+			worldId,
 			locationId,
 		})
 
@@ -139,7 +139,7 @@ export const onboard = mutation({
 		if (!player) {
 			await ctx.db.insert("players", {
 				userId,
-				worldId: worldId,
+				worldId,
 				currentCharacterId: characterId,
 			})
 		} else {

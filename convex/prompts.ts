@@ -72,7 +72,7 @@ export const create = mutation({
 		if (!player) {
 			playerId = await ctx.db.insert("players", {
 				userId: user._id,
-				worldId: worldId,
+				worldId,
 				currentPrompt: {
 					message: "",
 					actions: [],

@@ -8,7 +8,9 @@
 		"dev:convex": "convex dev --tail-logs",
 		"build": "vite build",
 		"preview": "vite preview",
-		"format": "prettier --write ."
+		"lint": "eslint . --cache",
+		"typecheck": "tsc -b",
+		"format": "pnpm run lint --fix || 0 && prettier --write ."
 	},
 	"dependencies": {
 		"@ariakit/react": "^0.4.13",
@@ -32,6 +34,7 @@
 		"zod-to-json-schema": "^3.23.5"
 	},
 	"devDependencies": {
+		"@eslint/js": "^9.14.0",
 		"@fontsource-variable/rubik": "^5.1.0",
 		"@tailwindcss/vite": "4.0.0-alpha.31",
 		"@tanstack/router-devtools": "^1.79.0",
@@ -41,12 +44,18 @@
 		"@types/react-dom": "npm:types-react-dom@19.0.0-rc.1",
 		"@vitejs/plugin-react": "^4.3.3",
 		"@vitejs/plugin-react-swc": "^3.7.1",
+		"eslint": "^9.14.0",
+		"eslint-plugin-react": "^7.37.2",
+		"eslint-plugin-react-compiler": "19.0.0-beta-63b359f-20241101",
+		"eslint-plugin-react-hooks": "^5.0.0",
+		"globals": "^15.12.0",
 		"npm-run-all": "^4.1.5",
 		"prettier": "^3.3.3",
 		"prettier-plugin-jsdoc": "^1.3.0",
 		"prettier-plugin-tailwindcss": "^0.6.8",
 		"tailwindcss": "4.0.0-alpha.31",
 		"typescript": "~5.3",
+		"typescript-eslint": "^8.13.0",
 		"vite": "^5.4.10"
 	},
 	"pnpm": {
