@@ -17,26 +17,16 @@ export const create = mutation({
 export const list = query({
 	args: { worldId: v.id("worlds") },
 	handler: async (ctx, { worldId }) => {
-		try {
-			await ensureViewerWorldAccess(ctx, worldId)
-			return await getManyFrom(ctx.db, "locations", "worldId", worldId)
-		} catch (error) {
-			console.warn(error)
-			return []
-		}
+		await ensureViewerWorldAccess(ctx, worldId)
+		return await getManyFrom(ctx.db, "locations", "worldId", worldId)
 	},
 })
 
 export const get = query({
 	args: { locationId: v.id("locations") },
 	handler: async (ctx, { locationId }) => {
-		try {
-			const location = await getOrThrow(ctx, locationId)
-			await ensureViewerWorldAccess(ctx, location.worldId)
-			return location
-		} catch (error) {
-			console.warn(error)
-			return null
-		}
+		const location = await getOrThrow(ctx, locationId)
+		await ensureViewerWorldAccess(ctx, location.worldId)
+		return location
 	},
 })

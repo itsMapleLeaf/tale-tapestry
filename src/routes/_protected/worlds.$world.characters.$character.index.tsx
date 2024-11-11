@@ -1,4 +1,4 @@
-import { convexQuery, useConvexMutation } from "@convex-dev/react-query"
+import { convexQuery, useConvexAction } from "@convex-dev/react-query"
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { LucidePlay } from "lucide-react"
@@ -71,14 +71,14 @@ function PromptList({
 	characterId: Id<"characters">
 }) {
 	const createPrompt = useMutation({
-		mutationFn: useConvexMutation(api.prompts.create),
+		mutationFn: useConvexAction(api.characters.act),
 	})
 
 	const [current, ...previous] = prompts.toReversed()
 
 	if (!current) {
 		return (
-			<form action={() => createPrompt.mutate({ characterId })}>
+			<form action={() => createPrompt.mutate({ characterId, action: null })}>
 				<Button type="submit" icon={<LucidePlay />}>
 					Start
 				</Button>
@@ -96,13 +96,15 @@ function PromptList({
 				</Fragment>
 			))}
 			<div className="vstack">
-				<p className="whitespace-pre-line">{current.content}</p>
+				<p className="text-lg whitespace-pre-line">{current.content}</p>
 				{current.status === "pending" && <LoadingIcon />}
 			</div>
 			{current.status === "pending" ? null : (
 				<InputForm
 					placeholder="Do something..."
-					action={() => createPrompt.mutate({ characterId })}
+					action={(action) =>
+						createPrompt.mutateAsync({ characterId, action }).catch()
+					}
 				/>
 			)}
 		</div>

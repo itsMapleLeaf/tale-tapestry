@@ -42,11 +42,8 @@ export const list = query({
 export const get = query({
 	args: { worldId: v.id("worlds") },
 	handler: async (ctx, { worldId }) => {
-		const userId = await ensureAuthUserId(ctx)
-		const world = await ctx.db.get(worldId)
-		if (!world || world.creatorId !== userId) {
-			return null
-		}
+		const world = await getOrThrow(ctx, worldId)
+		await ensureViewerWorldAccess(ctx, world._id)
 		return world
 	},
 })
@@ -133,7 +130,7 @@ ${JSON.stringify({ character: { name, pronouns, description }, location: { name:
 
 Return the following in a JSON object:
 - character.name: Their character name, but with proper name casing.
-- character.properties: A list of key/value properties derived from the character description, such as their appearance, likes, dislikes, personality traits, hobbies, and so on. Example: when given "a friendly florist who loves pancakes", you could return [{key:"occupation",value:"florist"},{key:"personality",value:"friendly"},{key:"likes",value:"pancakes"}]. Do not repeat any keys. If you find several values that would fit one key, return a single key/value pair with a comma-separated list of values.
+- character.properties: A list of key/value properties derived from the character description, such as their appearance, likes, dislikes, personality traits, hobbies, and so on. Example: when given "a friendly florist who loves pancakes", you could return [["occupation","florist"],["personality","friendly"],["likes","pancakes"]]. Do not repeat any keys. If you find several values that would fit one key, return a single key/value pair with a comma-separated list of values.
 - location.name: Interpret the given location name from the character's point of view and return a general proper name. For example, with a character named "Allison", "their house" should become "Allison's House".
 - location.time: Interpret the given  time and return either a fuzzy time, like "Early Morning", or a precise clock time rounded to the hour, like "3 PM".
 `.trim(),
